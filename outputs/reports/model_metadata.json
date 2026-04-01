@@ -1,0 +1,30 @@
+{
+  "model": "Isolation Forest",
+  "n_estimators": 200,
+  "contamination": 0.05,
+  "features": [
+    "cpu_usage",
+    "memory_usage",
+    "disk_io",
+    "network_traffic",
+    "error_count",
+    "response_time",
+    "active_connections",
+    "packet_loss"
+  ],
+  "total_records": 5250,
+  "anomalies_actual": 250,
+  "anomalies_detected": 263,
+  "precision": 0.9506,
+  "recall": 1.0,
+  "f1_score": 0.9747,
+  "servers_monitored": 50,
+  "anomaly_types": [
+    "memory_leak",
+    "service_down",
+    "network_flood",
+    "cpu_spike",
+    "disk_overload"
+  ],
+  "training_date": "2026-04-01 11:59:52"
+}
