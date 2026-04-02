@@ -1,724 +1,1016 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NOC — Network Anomaly Detection</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0a0e17;--bg-1:#0d1220;--bg-2:#111827;--bg-3:#161d2e;
-  --border:#1a2236;--border-h:#253050;
-  --txt:#c8d0e0;--txt-dim:#5a6580;--txt-bright:#e8edf5;
-  --cyan:#00e5ff;--red:#ff3d71;--amber:#ffaa00;--green:#39d98a;
-  --cyan-dim:rgba(0,229,255,.08);--red-dim:rgba(255,61,113,.08);
-  --amber-dim:rgba(255,170,0,.08);--green-dim:rgba(57,217,138,.08);
-  --font-mono:'JetBrains Mono',monospace;--font-sans:'DM Sans',sans-serif;
-}
-html{font-size:13px}
-body{
-  background:var(--bg);color:var(--txt);font-family:var(--font-mono);
-  min-height:100vh;overflow-x:hidden;
-  background-image:
-    linear-gradient(rgba(0,229,255,.02) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(0,229,255,.02) 1px,transparent 1px);
-  background-size:40px 40px;
-}
-/* scrollbar */
-::-webkit-scrollbar{width:5px}
-::-webkit-scrollbar-track{background:var(--bg-1)}
-::-webkit-scrollbar-thumb{background:var(--border-h);border-radius:0}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetGuard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* -------------------------------------------------------
+       Reset & base
+    ------------------------------------------------------- */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* ─── HEADER ─── */
-.header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 20px;height:48px;
-  background:var(--bg-1);border-bottom:1px solid var(--border);
-  position:sticky;top:0;z-index:100;
-}
-.header-left{display:flex;align-items:center;gap:10px}
-.chip-icon{
-  width:22px;height:22px;position:relative;
-  border:1.5px solid var(--cyan);border-radius:2px;
-  display:flex;align-items:center;justify-content:center;
-}
-.chip-icon::before{
-  content:'';width:8px;height:8px;background:var(--cyan);
-  box-shadow:0 0 6px var(--cyan);
-}
-.chip-icon::after{
-  content:'';position:absolute;
-  top:-4px;left:50%;transform:translateX(-50%);
-  width:2px;height:4px;background:var(--cyan);
-  box-shadow:
-    6px 0 0 var(--cyan),-6px 0 0 var(--cyan),
-    0 26px 0 var(--cyan),6px 26px 0 var(--cyan),-6px 26px 0 var(--cyan);
-}
-.header-title{
-  font-family:var(--font-sans);font-weight:700;font-size:13px;
-  color:var(--txt-bright);letter-spacing:.5px;text-transform:uppercase;
-}
-.header-center{display:flex;align-items:center;gap:8px}
-.live-dot{
-  width:7px;height:7px;border-radius:50%;background:var(--green);
-  animation:blink 1.5s infinite;box-shadow:0 0 6px var(--green);
-}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-.live-label{font-size:11px;color:var(--green);letter-spacing:1.5px;font-weight:700}
-.header-right{display:flex;align-items:center;gap:14px}
-.clock{font-size:11px;color:var(--txt-dim);letter-spacing:.5px}
-.model-badge{
-  font-size:10px;padding:2px 8px;
-  border:1px solid var(--cyan);color:var(--cyan);
-  letter-spacing:.5px;text-transform:uppercase;
-}
+    :root {
+      --blue: #0066FF;
+      --blue-light: #EBF2FF;
+      --red: #DC2626;
+      --red-light: #FEF2F2;
+      --green: #16A34A;
+      --green-light: #F0FDF4;
+      --amber: #D97706;
+      --amber-light: #FFFBEB;
+      --gray-50: #fafafa;
+      --gray-100: #f5f5f5;
+      --gray-200: #e5e5e5;
+      --gray-300: #d4d4d4;
+      --gray-400: #a3a3a3;
+      --gray-500: #737373;
+      --gray-600: #525252;
+      --gray-700: #404040;
+      --gray-800: #262626;
+      --gray-900: #171717;
+      --radius: 6px;
+    }
 
-/* ─── STATS ROW ─── */
-.stats-row{
-  display:grid;grid-template-columns:repeat(4,1fr);
-  border-bottom:1px solid var(--border);
-}
-.stat-block{
-  padding:14px 20px;border-right:1px solid var(--border);
-  position:relative;
-}
-.stat-block:last-child{border-right:none}
-.stat-label{
-  font-size:9px;color:var(--txt-dim);letter-spacing:1.5px;
-  text-transform:uppercase;margin-bottom:4px;
-}
-.stat-value{
-  font-size:26px;font-weight:700;color:var(--txt-bright);
-  line-height:1;
-}
-.stat-value.danger{color:var(--red)}
-.stat-value .unit{font-size:13px;color:var(--txt-dim);font-weight:400}
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--gray-100);
+      color: var(--gray-800);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
 
-/* ─── MAIN GRID ─── */
-.main{
-  display:grid;grid-template-columns:1fr 1fr;
-  min-height:0;
-}
-@media(min-width:1100px){.main{grid-template-columns:3fr 2fr}}
-.panel{border-right:1px solid var(--border);display:flex;flex-direction:column}
-.panel:last-child{border-right:none}
-.panel-head{
-  padding:10px 20px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-  background:var(--bg-1);
-}
-.panel-title{
-  font-family:var(--font-sans);font-size:11px;font-weight:700;
-  color:var(--txt-dim);letter-spacing:1.5px;text-transform:uppercase;
-}
-.panel-body{padding:16px 20px;flex:1;overflow-y:auto}
+    /* -------------------------------------------------------
+       Nav
+    ------------------------------------------------------- */
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 56px;
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
 
-/* ─── FORM ─── */
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
-.field{display:flex;flex-direction:column}
-.field label{
-  font-size:9px;color:var(--txt-dim);letter-spacing:1px;
-  text-transform:uppercase;margin-bottom:3px;
-}
-.field input{
-  background:var(--bg);border:1px solid var(--border);
-  color:var(--txt-bright);padding:7px 10px;font-family:var(--font-mono);
-  font-size:12px;outline:none;transition:border .15s;
-}
-.field input:focus{border-color:var(--cyan);box-shadow:0 0 0 1px rgba(0,229,255,.15)}
-.field input::placeholder{color:var(--txt-dim);opacity:.5}
-.btn-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-.btn{
-  font-family:var(--font-mono);font-size:11px;font-weight:700;
-  padding:8px 18px;border:none;cursor:pointer;
-  letter-spacing:.5px;text-transform:uppercase;
-  transition:all .15s;position:relative;
-}
-.btn-primary{background:var(--cyan);color:var(--bg)}
-.btn-primary:hover{box-shadow:0 0 12px rgba(0,229,255,.3)}
-.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--txt)}
-.btn-secondary:hover{border-color:var(--txt-dim);color:var(--txt-bright)}
-.btn-danger{background:transparent;border:1px solid var(--red);color:var(--red)}
-.btn-danger:hover{background:var(--red-dim)}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.btn .spinner{
-  display:none;width:12px;height:12px;
-  border:2px solid transparent;border-top-color:currentColor;
-  border-radius:50%;animation:spin .6s linear infinite;
-  margin-right:6px;vertical-align:middle;
-}
-.btn.loading .spinner{display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--gray-900);
+      letter-spacing: -0.3px;
+    }
 
-/* ─── RESULT PANEL ─── */
-.result{
-  margin-top:18px;border:1px solid var(--border);
-  animation:fadeIn .3s ease;display:none;
-}
-.result.visible{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.result-header{
-  padding:10px 14px;display:flex;align-items:center;
-  justify-content:space-between;border-bottom:1px solid var(--border);
-  background:var(--bg-1);
-}
-.result-server{font-size:13px;font-weight:700;color:var(--txt-bright)}
-.risk-badge{
-  font-size:9px;font-weight:700;padding:3px 10px;
-  letter-spacing:1px;text-transform:uppercase;
-}
-.risk-low{background:var(--green-dim);color:var(--green);border:1px solid var(--green)}
-.risk-medium{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber)}
-.risk-high,.risk-critical{background:var(--red-dim);color:var(--red);border:1px solid var(--red)}
-.result-body{padding:14px}
-.score-row{margin-bottom:12px}
-.score-label{font-size:9px;color:var(--txt-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
-.score-bar-track{
-  height:6px;background:var(--bg);border:1px solid var(--border);
-  position:relative;overflow:hidden;
-}
-.score-bar-fill{
-  height:100%;transition:width .5s ease,background .3s;
-  position:absolute;left:0;top:0;
-}
-.score-num{font-size:18px;font-weight:700;color:var(--txt-bright);margin-top:4px}
-.details-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.detail-pill{
-  font-size:9px;padding:3px 8px;letter-spacing:.5px;
-  border:1px solid var(--border);color:var(--txt-dim);
-  text-transform:uppercase;
-}
-.detail-pill.status-high,.detail-pill.status-critical{border-color:var(--red);color:var(--red);background:var(--red-dim)}
-.detail-pill.status-warning,.detail-pill.status-elevated{border-color:var(--amber);color:var(--amber);background:var(--amber-dim)}
-.detail-pill.status-normal,.detail-pill.status-low{border-color:var(--border);color:var(--txt-dim)}
-.detail-pill.status-slow{border-color:var(--amber);color:var(--amber);background:var(--amber-dim)}
-.result-ts{font-size:9px;color:var(--txt-dim);margin-top:10px;letter-spacing:.5px}
+    .nav-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--blue);
+    }
 
-/* ─── ALERT FEED ─── */
-.alert-feed{max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:0}
-.alert-item{
-  padding:10px 14px;border-bottom:1px solid var(--border);
-  animation:slideIn .25s ease;display:flex;align-items:flex-start;
-  justify-content:space-between;gap:10px;
-}
-@keyframes slideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
-.alert-item:hover{background:var(--bg-2)}
-.alert-left{display:flex;flex-direction:column;gap:2px;min-width:0}
-.alert-server{font-size:12px;font-weight:700;color:var(--txt-bright)}
-.alert-time{font-size:9px;color:var(--txt-dim);letter-spacing:.5px}
-.alert-score{font-size:9px;color:var(--txt-dim)}
-.alert-empty{
-  padding:40px 20px;text-align:center;
-  color:var(--txt-dim);font-size:11px;letter-spacing:.5px;
-}
-.alert-empty::before{
-  content:'—';display:block;font-size:20px;margin-bottom:6px;color:var(--border-h);
-}
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
 
-/* ─── MODEL ROW ─── */
-.model-row{
-  display:flex;flex-wrap:wrap;
-  border-top:1px solid var(--border);background:var(--bg-1);
-}
-.model-row .panel-head{flex:0 0 100%;border-bottom:1px solid var(--border)}
-.model-kv{
-  padding:12px 20px;border-right:1px solid var(--border);
-  flex:1;min-width:140px;
-}
-.model-kv:last-child{border-right:none}
-.model-kv .stat-label{margin-bottom:2px}
-.model-kv .stat-value{font-size:15px}
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--green);
+    }
 
-/* ─── RESPONSIVE ─── */
-@media(max-width:768px){
-  .stats-row{grid-template-columns:repeat(2,1fr)}
-  .stat-block:nth-child(2){border-right:none}
-  .main{grid-template-columns:1fr}
-  .panel{border-right:none;border-bottom:1px solid var(--border)}
-  .form-grid{grid-template-columns:1fr}
-  .header-center{display:none}
-  .model-kv{min-width:120px}
-}
-@media(max-width:480px){
-  .stats-row{grid-template-columns:1fr}
-  .stat-block{border-right:none;border-bottom:1px solid var(--border)}
-  .btn-row{flex-direction:column}
-  .btn{width:100%}
-}
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
 
-/* ─── UTILITY ─── */
-.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
-.loading-overlay{
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  background:rgba(10,14,23,.6);z-index:200;
-  display:none;align-items:center;justify-content:center;
-}
-.loading-overlay.visible{display:flex}
-.loading-spinner{
-  width:28px;height:28px;border:2px solid var(--border);
-  border-top-color:var(--cyan);border-radius:50%;
-  animation:spin .7s linear infinite;
-}
-.status-bar{
-  position:fixed;bottom:0;left:0;right:0;height:24px;
-  background:var(--bg-1);border-top:1px solid var(--border);
-  display:flex;align-items:center;padding:0 16px;
-  font-size:9px;color:var(--txt-dim);letter-spacing:.5px;
-  z-index:100;justify-content:space-between;
-}
-.status-bar .hotkey{color:var(--txt-dim)}
-.status-bar .hotkey kbd{
-  background:var(--bg-2);border:1px solid var(--border);
-  padding:0 4px;font-family:var(--font-mono);font-size:9px;
-  color:var(--txt);
-}
-</style>
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .nav-time {
+      font-size: 13px;
+      color: var(--gray-500);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* -------------------------------------------------------
+       Container
+    ------------------------------------------------------- */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 32px 64px;
+    }
+
+    /* -------------------------------------------------------
+       Stats
+    ------------------------------------------------------- */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+
+    .stat-card p {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .stat-card span {
+      font-size: 32px;
+      font-weight: 600;
+      color: var(--gray-900);
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .stat-card span.has-anomalies { color: var(--red); }
+
+    .stat-unit {
+      font-size: 16px !important;
+      font-weight: 400 !important;
+      color: var(--gray-400) !important;
+      letter-spacing: 0 !important;
+    }
+
+    /* -------------------------------------------------------
+       Main grid
+    ------------------------------------------------------- */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    @media (min-width: 960px) {
+      .main-grid { grid-template-columns: 65fr 35fr; }
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+
+    .card-body { padding: 24px; }
+
+    /* -------------------------------------------------------
+       Form
+    ------------------------------------------------------- */
+    .form-full { margin-bottom: 16px; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 16px;
+    }
+
+    .form-group { margin-bottom: 12px; }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-700);
+      margin-bottom: 4px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--gray-900);
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .form-group input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px var(--blue-light);
+    }
+
+    .form-group input::placeholder { color: var(--gray-400); }
+
+    /* -------------------------------------------------------
+       Buttons
+    ------------------------------------------------------- */
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 16px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-blue {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+    .btn-blue:hover:not(:disabled) { background: #0052CC; }
+
+    .btn-outline {
+      background: #fff;
+      color: var(--gray-700);
+      border-color: var(--gray-300);
+    }
+    .btn-outline:hover:not(:disabled) {
+      background: var(--gray-50);
+      border-color: var(--gray-400);
+    }
+
+    .btn-outline-red {
+      background: #fff;
+      color: var(--red);
+      border-color: var(--red);
+    }
+    .btn-outline-red:hover:not(:disabled) { background: var(--red-light); }
+
+    .btn-spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    .btn.is-loading .btn-spinner { display: block; }
+    .btn.is-loading .btn-text { opacity: 0.7; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Text-style button for "Clear" */
+    .btn-text-only {
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-500);
+      cursor: pointer;
+    }
+    .btn-text-only:hover { color: var(--gray-700); }
+
+    /* -------------------------------------------------------
+       Result
+    ------------------------------------------------------- */
+    .result-card {
+      margin-top: 20px;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: none;
+    }
+
+    .result-card.visible {
+      display: block;
+      animation: fadeUp 0.25s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .result-server {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-green  { background: var(--green-light); color: var(--green); }
+    .badge-red    { background: var(--red-light);   color: var(--red); }
+    .badge-amber  { background: var(--amber-light); color: var(--amber); }
+
+    .result-body { padding: 20px; }
+
+    .score-section { margin-bottom: 20px; }
+
+    .score-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .score-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .score-value {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--gray-900);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .score-track {
+      width: 100%;
+      height: 4px;
+      background: var(--gray-200);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    .details-list { list-style: none; }
+
+    .details-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .details-list li:last-child { border-bottom: none; }
+
+    .detail-key {
+      color: var(--gray-600);
+      text-transform: capitalize;
+    }
+
+    .detail-val { font-weight: 500; }
+    .detail-val.normal { color: var(--green); }
+    .detail-val.warning { color: var(--amber); }
+    .detail-val.critical { color: var(--red); }
+
+    .result-ts {
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--gray-400);
+    }
+
+    /* -------------------------------------------------------
+       Alerts
+    ------------------------------------------------------- */
+    .alert-list {
+      padding: 0;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .alert-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--gray-100);
+      animation: fadeUp 0.2s ease;
+    }
+
+    .alert-item:last-child { border-bottom: none; }
+
+    .alert-left { display: flex; flex-direction: column; gap: 2px; }
+
+    .alert-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-900);
+    }
+
+    .alert-time {
+      font-size: 12px;
+      color: var(--gray-400);
+    }
+
+    .alert-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .alert-dot.critical { background: var(--red); }
+    .alert-dot.high     { background: var(--red); }
+    .alert-dot.medium   { background: var(--amber); }
+    .alert-dot.low      { background: var(--green); }
+    .alert-dot.healthy  { background: var(--green); }
+
+    .alert-empty {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--gray-400);
+      font-size: 13px;
+    }
+
+    /* -------------------------------------------------------
+       Model footer
+    ------------------------------------------------------- */
+    .model-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--gray-500);
+      padding: 16px;
+    }
+
+    .model-footer span { white-space: nowrap; }
+
+    .sep {
+      color: var(--gray-300);
+    }
+
+    /* -------------------------------------------------------
+       Responsive
+    ------------------------------------------------------- */
+    @media (max-width: 768px) {
+      .nav { padding: 0 16px; }
+      .container { padding: 16px 16px 48px; }
+      .stats { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .main-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .btn-group { flex-wrap: wrap; }
+      .stat-card span { font-size: 26px; }
+    }
+
+    @media (max-width: 480px) {
+      .stats { grid-template-columns: 1fr; }
+      .btn-group { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
-  <div class="header-left">
-    <div class="chip-icon"></div>
-    <span class="header-title">Network Anomaly Detection</span>
-  </div>
-  <div class="header-center">
-    <div class="live-dot" id="liveDot"></div>
-    <span class="live-label" id="liveLabel">SYSTEM ONLINE</span>
-  </div>
-  <div class="header-right">
-    <span class="clock" id="clock"></span>
-    <span class="model-badge" id="modelBadge">—</span>
-  </div>
-</div>
-
-<!-- STATS ROW -->
-<div class="stats-row">
-  <div class="stat-block">
-    <div class="stat-label">Servers Monitored</div>
-    <div class="stat-value" id="statServers">—</div>
-  </div>
-  <div class="stat-block">
-    <div class="stat-label">Total Checks</div>
-    <div class="stat-value" id="statChecks">—</div>
-  </div>
-  <div class="stat-block">
-    <div class="stat-label">Anomalies Detected</div>
-    <div class="stat-value" id="statAnomalies">—</div>
-  </div>
-  <div class="stat-block">
-    <div class="stat-label">Anomaly Rate</div>
-    <div class="stat-value" id="statRate">—</div>
-  </div>
-</div>
-
-<!-- MAIN -->
-<div class="main">
-  <!-- LEFT: ANALYZE -->
-  <div class="panel">
-    <div class="panel-head">
-      <span class="panel-title">&#9654; Analyze Server</span>
+  <!-- =====================================================
+       Navigation
+  ====================================================== -->
+  <nav class="nav">
+    <div class="nav-logo">
+      <div class="nav-dot"></div>
+      NetGuard
     </div>
-    <div class="panel-body">
-      <div class="form-grid">
-        <div class="field">
-          <label for="f_server_id">Server ID</label>
-          <input id="f_server_id" type="text" placeholder="e.g. srv-web-01">
-        </div>
-        <div class="field">
-          <label for="f_cpu">CPU Usage (%)</label>
-          <input id="f_cpu" type="number" step="0.1" placeholder="0–100">
-        </div>
-        <div class="field">
-          <label for="f_mem">Memory Usage (%)</label>
-          <input id="f_mem" type="number" step="0.1" placeholder="0–100">
-        </div>
-        <div class="field">
-          <label for="f_disk">Disk I/O (MB/s)</label>
-          <input id="f_disk" type="number" step="0.1" placeholder="0–500">
-        </div>
-        <div class="field">
-          <label for="f_net">Network Traffic (Mbps)</label>
-          <input id="f_net" type="number" step="0.1" placeholder="0–1000">
-        </div>
-        <div class="field">
-          <label for="f_err">Error Count</label>
-          <input id="f_err" type="number" placeholder="0–100">
-        </div>
-        <div class="field">
-          <label for="f_resp">Response Time (ms)</label>
-          <input id="f_resp" type="number" step="0.1" placeholder="0–5000">
-        </div>
-        <div class="field">
-          <label for="f_conn">Active Connections</label>
-          <input id="f_conn" type="number" placeholder="0–500">
-        </div>
-        <div class="field">
-          <label for="f_pkt">Packet Loss (%)</label>
-          <input id="f_pkt" type="number" step="0.01" placeholder="0–100">
-        </div>
+    <div class="nav-right">
+      <div class="status-badge" id="statusBadge">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Online</span>
       </div>
-      <div class="btn-row">
-        <button class="btn btn-primary" id="btnAnalyze" onclick="analyze()">
-          <span class="spinner"></span>ANALYZE
-        </button>
-        <button class="btn btn-secondary" onclick="fillRandom()">RANDOM TEST</button>
-        <button class="btn btn-danger" onclick="fillAnomaly()">SIMULATE ANOMALY</button>
-      </div>
+      <span class="nav-time" id="clock"></span>
+    </div>
+  </nav>
 
-      <!-- RESULT -->
-      <div class="result" id="resultPanel">
-        <div class="result-header">
-          <span class="result-server" id="resServer"></span>
-          <span class="risk-badge" id="resBadge"></span>
+  <div class="container">
+
+    <!-- ===================================================
+         Stats
+    ==================================================== -->
+    <div class="stats">
+      <div class="stat-card">
+        <p>Servers</p>
+        <span id="statServers">0</span>
+      </div>
+      <div class="stat-card">
+        <p>Checks</p>
+        <span id="statChecks">0</span>
+      </div>
+      <div class="stat-card">
+        <p>Anomalies</p>
+        <span id="statAnomalies">0</span>
+      </div>
+      <div class="stat-card">
+        <p>Rate</p>
+        <span id="statRate">0<span class="stat-unit">%</span></span>
+      </div>
+    </div>
+
+    <!-- ===================================================
+         Main grid
+    ==================================================== -->
+    <div class="main-grid">
+
+      <!-- Left column: Server Analysis -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Server Analysis</h2>
         </div>
-        <div class="result-body">
-          <div class="score-row">
-            <div class="score-label">Anomaly Score</div>
-            <div class="score-bar-track">
-              <div class="score-bar-fill" id="resBar"></div>
+        <div class="card-body">
+
+          <!-- Server ID — full width -->
+          <div class="form-full">
+            <div class="form-group">
+              <label for="f_id">Server ID</label>
+              <input id="f_id" type="text" placeholder="srv-web-01">
             </div>
-            <div class="score-num" id="resScore"></div>
           </div>
-          <div class="score-label">Status Breakdown</div>
-          <div class="details-grid" id="resDetails"></div>
-          <div class="result-ts" id="resTs"></div>
+
+          <!-- Metric fields — two columns -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="f_cpu">CPU Usage (%)</label>
+              <input id="f_cpu" type="number" step="0.1" placeholder="0 – 100">
+            </div>
+            <div class="form-group">
+              <label for="f_mem">Memory Usage (%)</label>
+              <input id="f_mem" type="number" step="0.1" placeholder="0 – 100">
+            </div>
+            <div class="form-group">
+              <label for="f_disk">Disk I/O (MB/s)</label>
+              <input id="f_disk" type="number" step="0.1" placeholder="0 – 500">
+            </div>
+            <div class="form-group">
+              <label for="f_net">Network Traffic (Mbps)</label>
+              <input id="f_net" type="number" step="0.1" placeholder="0 – 1000">
+            </div>
+            <div class="form-group">
+              <label for="f_err">Error Count</label>
+              <input id="f_err" type="number" placeholder="0 – 100">
+            </div>
+            <div class="form-group">
+              <label for="f_resp">Response Time (ms)</label>
+              <input id="f_resp" type="number" step="0.1" placeholder="0 – 5000">
+            </div>
+            <div class="form-group">
+              <label for="f_conn">Active Connections</label>
+              <input id="f_conn" type="number" placeholder="0 – 500">
+            </div>
+            <div class="form-group">
+              <label for="f_pkt">Packet Loss (%)</label>
+              <input id="f_pkt" type="number" step="0.01" placeholder="0 – 100">
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="btn-group">
+            <button class="btn btn-blue" id="btnAnalyze">
+              <span class="btn-spinner"></span>
+              <span class="btn-text">Analyze</span>
+            </button>
+            <button class="btn btn-outline" id="btnRandom">Random Values</button>
+            <button class="btn btn-outline-red" id="btnAnomaly">Test Anomaly</button>
+          </div>
+
+          <!-- Result -->
+          <div class="result-card" id="resultCard">
+            <div class="result-top">
+              <span class="result-server" id="resServer"></span>
+              <span class="badge" id="resBadge"></span>
+            </div>
+            <div class="result-body">
+              <div class="score-section">
+                <div class="score-header">
+                  <span class="score-label">Anomaly score</span>
+                  <span class="score-value" id="resScore"></span>
+                </div>
+                <div class="score-track">
+                  <div class="score-fill" id="resBar"></div>
+                </div>
+              </div>
+              <ul class="details-list" id="resDetails"></ul>
+              <div class="result-ts" id="resTs"></div>
+            </div>
+          </div>
+
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- RIGHT: ALERTS -->
-  <div class="panel">
-    <div class="panel-head">
-      <span class="panel-title">&#9654; Alert Feed</span>
-      <button class="btn btn-secondary" style="padding:4px 10px;font-size:9px" onclick="clearAlerts()">CLEAR</button>
-    </div>
-    <div class="panel-body" style="padding:0">
-      <div class="alert-feed" id="alertFeed">
-        <div class="alert-empty">No anomalies detected</div>
+      <!-- Right column: Recent Alerts -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Recent Alerts</h2>
+          <button class="btn-text-only" id="btnClear">Clear</button>
+        </div>
+        <div class="alert-list" id="alertList">
+          <div class="alert-empty">No alerts yet</div>
+        </div>
       </div>
+
     </div>
+
+    <!-- ===================================================
+         Model footer
+    ==================================================== -->
+    <div class="model-footer" id="modelFooter">
+      <span id="mfModel">Model: —</span>
+      <span class="sep">|</span>
+      <span id="mfPrecision">Precision: —</span>
+      <span class="sep">|</span>
+      <span id="mfRecall">Recall: —</span>
+      <span class="sep">|</span>
+      <span id="mfF1">F1: —</span>
+    </div>
+
   </div>
-</div>
 
-<!-- MODEL INFO -->
-<div class="model-row">
-  <div class="panel-head" style="border-bottom:1px solid var(--border)">
-    <span class="panel-title">&#9654; Model Info</span>
-  </div>
-  <div class="model-kv">
-    <div class="stat-label">Model Type</div>
-    <div class="stat-value" id="miType">—</div>
-  </div>
-  <div class="model-kv">
-    <div class="stat-label">Precision</div>
-    <div class="stat-value" id="miPrecision">—</div>
-  </div>
-  <div class="model-kv">
-    <div class="stat-label">Recall</div>
-    <div class="stat-value" id="miRecall">—</div>
-  </div>
-  <div class="model-kv">
-    <div class="stat-label">F1 Score</div>
-    <div class="stat-value" id="miF1">—</div>
-  </div>
-  <div class="model-kv">
-    <div class="stat-label">Training Date</div>
-    <div class="stat-value" id="miDate">—</div>
-  </div>
-</div>
+  <script>
+    /* =======================================================
+       Config
+    ======================================================= */
+    var API = 'https://network-anomaly-api-894733684211.us-central1.run.app';
 
-<!-- STATUS BAR -->
-<div class="status-bar">
-  <span>Auto-refresh: 30s &nbsp;|&nbsp; Last update: <span id="lastUpdate">—</span></span>
-  <span class="hotkey"><kbd>Enter</kbd> Analyze &nbsp; <kbd>R</kbd> Random &nbsp; <kbd>A</kbd> Anomaly</span>
-</div>
+    /* =======================================================
+       Helpers
+    ======================================================= */
+    function $(id) { return document.getElementById(id); }
 
-<script>
-const API = 'https://network-anomaly-api-894733684211.us-central1.run.app';
-
-// ─── CLOCK ───
-function updateClock() {
-  const now = new Date();
-  const d = now.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'2-digit' });
-  const t = now.toLocaleTimeString('en-US', { hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
-  document.getElementById('clock').textContent = d + '  ' + t;
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// ─── FETCH HELPERS ───
-async function apiFetch(path, opts) {
-  const res = await fetch(API + path, opts);
-  if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
-  return res.json();
-}
-
-function stampNow() {
-  document.getElementById('lastUpdate').textContent =
-    new Date().toLocaleTimeString('en-US', { hour12:false });
-}
-
-// ─── LOAD STATS ───
-async function loadStats() {
-  try {
-    const d = await apiFetch('/dashboard/summary');
-    document.getElementById('statServers').textContent = d.servers_monitored ?? '—';
-    document.getElementById('statChecks').textContent = (d.total_checks ?? 0).toLocaleString();
-    const anomVal = d.total_anomalies ?? 0;
-    const el = document.getElementById('statAnomalies');
-    el.textContent = anomVal.toLocaleString();
-    el.className = 'stat-value' + (anomVal > 0 ? ' danger' : '');
-    const rate = d.anomaly_rate ?? 0;
-    document.getElementById('statRate').innerHTML =
-      (typeof rate === 'number' ? rate.toFixed(1) : rate) + '<span class="unit">%</span>';
-    stampNow();
-  } catch(e) { console.error('stats:', e); }
-}
-
-// ─── LOAD HEALTH ───
-async function loadHealth() {
-  try {
-    const h = await apiFetch('/health');
-    document.getElementById('modelBadge').textContent = h.model_type || 'AI';
-    const dot = document.getElementById('liveDot');
-    const lbl = document.getElementById('liveLabel');
-    if (h.status === 'healthy') {
-      dot.style.background = 'var(--green)';
-      dot.style.boxShadow = '0 0 6px var(--green)';
-      lbl.textContent = 'SYSTEM ONLINE';
-      lbl.style.color = 'var(--green)';
-    } else {
-      dot.style.background = 'var(--red)';
-      dot.style.boxShadow = '0 0 6px var(--red)';
-      lbl.textContent = 'SYSTEM OFFLINE';
-      lbl.style.color = 'var(--red)';
+    function esc(str) {
+      var el = document.createElement('span');
+      el.textContent = str;
+      return el.innerHTML;
     }
-  } catch(e) {
-    console.error('health:', e);
-    document.getElementById('liveLabel').textContent = 'CONN ERROR';
-    document.getElementById('liveLabel').style.color = 'var(--red)';
-  }
-}
 
-// ─── LOAD MODEL ───
-async function loadModel() {
-  try {
-    const m = await apiFetch('/model/info');
-    document.getElementById('miType').textContent = m.model_type || '—';
-    const metrics = m.metrics || m;
-    document.getElementById('miPrecision').textContent =
-      metrics.precision != null ? Number(metrics.precision).toFixed(4) : '—';
-    document.getElementById('miRecall').textContent =
-      metrics.recall != null ? Number(metrics.recall).toFixed(4) : '—';
-    document.getElementById('miF1').textContent =
-      metrics.f1_score != null ? Number(metrics.f1_score).toFixed(4) : '—';
-    document.getElementById('miDate').textContent = m.training_date || m.last_trained || '—';
-  } catch(e) { console.error('model:', e); }
-}
+    function rand(min, max, decimals) {
+      var v = Math.random() * (max - min) + min;
+      return decimals != null ? Number(v.toFixed(decimals)) : Math.round(v);
+    }
 
-// ─── LOAD ALERTS ───
-let alertCache = [];
-async function loadAlerts() {
-  try {
-    const d = await apiFetch('/alerts');
-    const alerts = d.alerts || [];
-    if (alerts.length === 0) return;
-    const newAlerts = alerts.filter(a =>
-      !alertCache.some(c => c.timestamp === a.timestamp && c.server_id === a.server_id)
-    );
-    if (newAlerts.length > 0) {
-      alertCache = alerts;
+    async function api(path, opts) {
+      var res = await fetch(API + path, opts);
+      if (!res.ok) throw new Error(res.status);
+      return res.json();
+    }
+
+    /**
+     * Turns an ISO/date string into a relative label like "2 min ago".
+     */
+    function timeAgo(dateStr) {
+      var diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+      if (diff < 5)   return 'just now';
+      if (diff < 60)  return Math.floor(diff) + 's ago';
+      if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    /* =======================================================
+       Clock
+    ======================================================= */
+    function tickClock() {
+      var d = new Date();
+      $('clock').textContent = d.toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric'
+      }) + '  ' + d.toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+      });
+    }
+    tickClock();
+    setInterval(tickClock, 1000);
+
+    /* =======================================================
+       Health check — sets the status badge
+    ======================================================= */
+    async function loadHealth() {
+      try {
+        var h = await api('/health');
+        var ok = h.status === 'healthy';
+        $('statusDot').style.background = ok ? 'var(--green)' : 'var(--red)';
+        $('statusText').textContent = ok ? 'Online' : 'Offline';
+        $('statusBadge').style.color = ok ? 'var(--green)' : 'var(--red)';
+      } catch (e) {
+        $('statusDot').style.background = 'var(--red)';
+        $('statusText').textContent = 'Offline';
+        $('statusBadge').style.color = 'var(--red)';
+      }
+    }
+
+    /* =======================================================
+       Dashboard summary — fills stat cards
+    ======================================================= */
+    async function loadStats() {
+      try {
+        var d = await api('/dashboard/summary');
+        $('statServers').textContent = d.servers_monitored ?? 0;
+        $('statChecks').textContent = (d.total_checks ?? 0).toLocaleString();
+
+        var anom = d.total_anomalies ?? 0;
+        var el = $('statAnomalies');
+        el.textContent = anom.toLocaleString();
+        el.className = anom > 0 ? 'has-anomalies' : '';
+
+        var rate = d.anomaly_rate ?? 0;
+        $('statRate').innerHTML = (typeof rate === 'number' ? rate.toFixed(1) : rate) +
+          '<span class="stat-unit">%</span>';
+      } catch (e) { /* silent */ }
+    }
+
+    /* =======================================================
+       Model info — fills footer
+    ======================================================= */
+    async function loadModel() {
+      try {
+        var m = await api('/model/info');
+        var met = m.metrics || m;
+        $('mfModel').textContent = 'Model: ' + (m.model_type || m.model || '—');
+        $('mfPrecision').textContent = 'Precision: ' +
+          (met.precision != null ? Number(met.precision).toFixed(2) : '—');
+        $('mfRecall').textContent = 'Recall: ' +
+          (met.recall != null ? Number(met.recall).toFixed(2) : '—');
+        $('mfF1').textContent = 'F1: ' +
+          (met.f1_score != null ? Number(met.f1_score).toFixed(2) : '—');
+      } catch (e) { /* silent */ }
+    }
+
+    /* =======================================================
+       Alerts
+    ======================================================= */
+    var alerts = [];
+
+    async function loadAlerts() {
+      try {
+        var d = await api('/alerts');
+        var list = d.alerts || [];
+        if (list.length === 0) return;
+        alerts = list;
+        renderAlerts();
+      } catch (e) { /* silent */ }
+    }
+
+    function renderAlerts() {
+      var el = $('alertList');
+      if (alerts.length === 0) {
+        el.innerHTML = '<div class="alert-empty">No alerts yet</div>';
+        return;
+      }
+      var sorted = alerts.slice().sort(function(a, b) {
+        return new Date(b.timestamp) - new Date(a.timestamp);
+      });
+      el.innerHTML = sorted.map(function(a) {
+        var level = (a.risk_level || 'low').toLowerCase();
+        return '<div class="alert-item">' +
+          '<div class="alert-left">' +
+            '<span class="alert-name">' + esc(a.server_id || '—') + '</span>' +
+            '<span class="alert-time">' + timeAgo(a.timestamp) + '</span>' +
+          '</div>' +
+          '<div class="alert-dot ' + level + '"></div>' +
+        '</div>';
+      }).join('');
+    }
+
+    $('btnClear').addEventListener('click', function() {
+      alerts = [];
       renderAlerts();
+    });
+
+    /* =======================================================
+       Form: fill helpers
+    ======================================================= */
+    function fillRandom() {
+      var types = ['web', 'db', 'cache', 'api', 'worker'];
+      $('f_id').value = 'srv-' + types[rand(0, types.length - 1)] + '-' + String(rand(1, 20)).padStart(2, '0');
+      $('f_cpu').value  = rand(10, 65, 1);
+      $('f_mem').value  = rand(20, 60, 1);
+      $('f_disk').value = rand(10, 140, 1);
+      $('f_net').value  = rand(50, 350, 1);
+      $('f_err').value  = rand(0, 6);
+      $('f_resp').value = rand(40, 280, 1);
+      $('f_conn').value = rand(10, 130);
+      $('f_pkt').value  = rand(0, 2, 2);
     }
-  } catch(e) { console.error('alerts:', e); }
-}
 
-function renderAlerts() {
-  const feed = document.getElementById('alertFeed');
-  if (alertCache.length === 0) {
-    feed.innerHTML = '<div class="alert-empty">No anomalies detected</div>';
-    return;
-  }
-  const sorted = [...alertCache].sort((a, b) =>
-    new Date(b.timestamp) - new Date(a.timestamp)
-  );
-  feed.innerHTML = sorted.map(a => {
-    const risk = (a.risk_level || 'low').toLowerCase();
-    const cls = risk === 'critical' || risk === 'high' ? 'risk-high'
-              : risk === 'medium' ? 'risk-medium' : 'risk-low';
-    const ts = a.timestamp ? new Date(a.timestamp).toLocaleTimeString('en-US', { hour12:false }) : '—';
-    const score = a.anomaly_score != null ? 'Score: ' + Number(a.anomaly_score).toFixed(3) : '';
-    return `<div class="alert-item">
-      <div class="alert-left">
-        <span class="alert-server">${esc(a.server_id || '—')}</span>
-        <span class="alert-time">${ts}</span>
-        <span class="alert-score">${score}</span>
-      </div>
-      <span class="risk-badge ${cls}">${esc((a.risk_level||'low').toUpperCase())}</span>
-    </div>`;
-  }).join('');
-}
+    function fillAnomaly() {
+      var types = ['web', 'db', 'api'];
+      $('f_id').value = 'srv-' + types[rand(0, types.length - 1)] + '-' + String(rand(1, 5)).padStart(2, '0');
+      $('f_cpu').value  = rand(88, 99, 1);
+      $('f_mem').value  = rand(90, 98, 1);
+      $('f_disk').value = rand(300, 490, 1);
+      $('f_net').value  = rand(800, 970, 1);
+      $('f_err').value  = rand(40, 90);
+      $('f_resp').value = rand(2000, 4500, 1);
+      $('f_conn').value = rand(350, 490);
+      $('f_pkt').value  = rand(10, 45, 2);
+    }
 
-function clearAlerts() {
-  alertCache = [];
-  renderAlerts();
-}
+    $('btnRandom').addEventListener('click', fillRandom);
+    $('btnAnomaly').addEventListener('click', fillAnomaly);
 
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
+    /* =======================================================
+       Analyze
+    ======================================================= */
+    async function analyze() {
+      var btn = $('btnAnalyze');
+      if (btn.disabled) return;
 
-// ─── FORM HELPERS ───
-const ids = ['f_server_id','f_cpu','f_mem','f_disk','f_net','f_err','f_resp','f_conn','f_pkt'];
-function val(id) { return document.getElementById(id).value; }
-function setVal(id, v) { document.getElementById(id).value = v; }
+      var payload = {
+        server_id:          $('f_id').value || 'srv-unknown',
+        cpu_usage:          Number($('f_cpu').value) || 0,
+        memory_usage:       Number($('f_mem').value) || 0,
+        disk_io:            Number($('f_disk').value) || 0,
+        network_traffic:    Number($('f_net').value) || 0,
+        error_count:        Number($('f_err').value) || 0,
+        response_time:      Number($('f_resp').value) || 0,
+        active_connections: Number($('f_conn').value) || 0,
+        packet_loss:        Number($('f_pkt').value) || 0
+      };
 
-function rand(min, max, dec) {
-  const v = Math.random() * (max - min) + min;
-  return dec != null ? Number(v.toFixed(dec)) : Math.round(v);
-}
+      btn.disabled = true;
+      btn.classList.add('is-loading');
 
-function fillRandom() {
-  setVal('f_server_id', 'srv-' + ['web','db','cache','api','worker'][rand(0,4)] + '-' + String(rand(1,20)).padStart(2,'0'));
-  setVal('f_cpu', rand(10, 70, 1));
-  setVal('f_mem', rand(20, 65, 1));
-  setVal('f_disk', rand(10, 150, 1));
-  setVal('f_net', rand(50, 400, 1));
-  setVal('f_err', rand(0, 8));
-  setVal('f_resp', rand(50, 300, 1));
-  setVal('f_conn', rand(10, 150));
-  setVal('f_pkt', rand(0, 2, 2));
-}
+      try {
+        var r = await api('/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showResult(r);
+        loadStats();
+        loadAlerts();
+      } catch (e) {
+        alert('Analysis failed — check the console.');
+        console.error(e);
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('is-loading');
+      }
+    }
 
-function fillAnomaly() {
-  setVal('f_server_id', 'srv-' + ['web','db','api'][rand(0,2)] + '-' + String(rand(1,5)).padStart(2,'0'));
-  setVal('f_cpu', rand(88, 99, 1));
-  setVal('f_mem', rand(90, 98, 1));
-  setVal('f_disk', rand(300, 490, 1));
-  setVal('f_net', rand(800, 980, 1));
-  setVal('f_err', rand(40, 95));
-  setVal('f_resp', rand(2000, 4800, 1));
-  setVal('f_conn', rand(350, 490));
-  setVal('f_pkt', rand(10, 45, 2));
-}
+    $('btnAnalyze').addEventListener('click', analyze);
 
-// ─── ANALYZE ───
-async function analyze() {
-  const btn = document.getElementById('btnAnalyze');
-  if (btn.disabled) return;
+    /* =======================================================
+       Show result
+    ======================================================= */
+    function showResult(r) {
+      var card = $('resultCard');
 
-  const body = {
-    server_id: val('f_server_id') || 'srv-unknown',
-    cpu_usage: Number(val('f_cpu')) || 0,
-    memory_usage: Number(val('f_mem')) || 0,
-    disk_io: Number(val('f_disk')) || 0,
-    network_traffic: Number(val('f_net')) || 0,
-    error_count: Number(val('f_err')) || 0,
-    response_time: Number(val('f_resp')) || 0,
-    active_connections: Number(val('f_conn')) || 0,
-    packet_loss: Number(val('f_pkt')) || 0,
-  };
+      // Server name
+      $('resServer').textContent = r.server_id || '—';
 
-  btn.disabled = true;
-  btn.classList.add('loading');
+      // Badge
+      var risk = (r.risk_level || 'low').toLowerCase();
+      var badge = $('resBadge');
+      badge.textContent = r.risk_level || 'HEALTHY';
 
-  try {
-    const r = await apiFetch('/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      if (risk === 'critical' || risk === 'high') {
+        badge.className = 'badge badge-red';
+      } else if (risk === 'medium') {
+        badge.className = 'badge badge-amber';
+      } else {
+        badge.className = 'badge badge-green';
+      }
+
+      // Score bar
+      var score = r.anomaly_score ?? 0;
+      var pct = Math.min(score * 100, 100);
+      $('resScore').textContent = score.toFixed(4);
+
+      var bar = $('resBar');
+      bar.style.width = pct + '%';
+      if (score > 0.7) bar.style.background = 'var(--red)';
+      else if (score > 0.4) bar.style.background = 'var(--amber)';
+      else bar.style.background = 'var(--green)';
+
+      // Details list
+      var details = r.details || {};
+      var html = '';
+      Object.keys(details).forEach(function(key) {
+        var val = details[key];
+        var valLower = (typeof val === 'string' ? val : '').toLowerCase();
+        var cls = 'normal';
+        if (valLower.includes('high') || valLower.includes('critical') ||
+            valLower.includes('excessive') || valLower.includes('overloaded'))
+          cls = 'critical';
+        else if (valLower.includes('slow') || valLower.includes('warning') || valLower.includes('elevated'))
+          cls = 'warning';
+
+        var label = key.replace(/_/g, ' ');
+        html += '<li><span class="detail-key">' + esc(label) + '</span>' +
+                '<span class="detail-val ' + cls + '">' + esc(val) + '</span></li>';
+      });
+      $('resDetails').innerHTML = html;
+
+      // Timestamp
+      $('resTs').textContent = r.timestamp || '';
+
+      // Show card
+      card.classList.remove('visible');
+      // Force reflow so the animation replays
+      void card.offsetWidth;
+      card.classList.add('visible');
+
+      // Push to local alerts if anomaly
+      if (r.is_anomaly) {
+        alerts.unshift({
+          server_id: r.server_id,
+          risk_level: r.risk_level,
+          anomaly_score: r.anomaly_score,
+          timestamp: r.timestamp
+        });
+        renderAlerts();
+      }
+    }
+
+    /* =======================================================
+       Keyboard shortcut: Enter to analyze
+    ======================================================= */
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        analyze();
+      }
     });
-    showResult(r);
-    // refresh stats & alerts after analysis
+
+    /* =======================================================
+       Init + auto-refresh
+    ======================================================= */
+    loadHealth();
     loadStats();
+    loadModel();
     loadAlerts();
-  } catch(e) {
-    alert('Analysis failed: ' + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.classList.remove('loading');
-  }
-}
 
-function showResult(r) {
-  const panel = document.getElementById('resultPanel');
-  panel.classList.add('visible');
-
-  document.getElementById('resServer').textContent = r.server_id || '—';
-
-  const risk = (r.risk_level || 'low').toLowerCase();
-  const badge = document.getElementById('resBadge');
-  badge.textContent = (r.risk_level || 'LOW').toUpperCase();
-  badge.className = 'risk-badge risk-' + risk;
-
-  const score = r.anomaly_score ?? 0;
-  const pct = Math.min(score * 100, 100);
-  const bar = document.getElementById('resBar');
-  bar.style.width = pct + '%';
-  bar.style.background = score > 0.7 ? 'var(--red)' : score > 0.4 ? 'var(--amber)' : 'var(--green)';
-  document.getElementById('resScore').textContent = Number(score).toFixed(4);
-
-  // details
-  const det = document.getElementById('resDetails');
-  const details = r.details || {};
-  det.innerHTML = Object.entries(details).map(([k, v]) => {
-    const status = (typeof v === 'string' ? v : '').toLowerCase();
-    let cls = 'status-normal';
-    if (status.includes('high') || status.includes('critical') || status.includes('excessive') || status.includes('overloaded') || status.includes('saturated'))
-      cls = 'status-high';
-    else if (status.includes('warning') || status.includes('elevated'))
-      cls = 'status-warning';
-    else if (status.includes('slow'))
-      cls = 'status-slow';
-    const label = k.replace(/_/g, ' ');
-    return `<span class="detail-pill ${cls}">${esc(label)}: ${esc(v)}</span>`;
-  }).join('');
-
-  document.getElementById('resTs').textContent = r.timestamp || '';
-
-  // add to local alert feed if anomaly
-  if (r.is_anomaly) {
-    alertCache.unshift({
-      server_id: r.server_id,
-      risk_level: r.risk_level,
-      anomaly_score: r.anomaly_score,
-      timestamp: r.timestamp,
-    });
-    renderAlerts();
-  }
-}
-
-// ─── KEYBOARD SHORTCUTS ───
-document.addEventListener('keydown', function(e) {
-  // don't fire if focused on an input
-  const tag = e.target.tagName;
-  if (e.key === 'Enter') {
-    analyze();
-    e.preventDefault();
-  }
-  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-  if (e.key === 'r' || e.key === 'R') fillRandom();
-  if (e.key === 'a' || e.key === 'A') fillAnomaly();
-});
-
-// ─── INIT ───
-loadHealth();
-loadStats();
-loadModel();
-loadAlerts();
-
-// auto-refresh every 30s
-setInterval(() => {
-  loadStats();
-  loadAlerts();
-  loadHealth();
-}, 30000);
-</script>
+    setInterval(function() {
+      loadHealth();
+      loadStats();
+      loadAlerts();
+    }, 30000);
+  </script>
 
 </body>
 </html>
