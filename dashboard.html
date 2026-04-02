@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOC — Network Anomaly Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e17;--bg-1:#0d1220;--bg-2:#111827;--bg-3:#161d2e;
+  --border:#1a2236;--border-h:#253050;
+  --txt:#c8d0e0;--txt-dim:#5a6580;--txt-bright:#e8edf5;
+  --cyan:#00e5ff;--red:#ff3d71;--amber:#ffaa00;--green:#39d98a;
+  --cyan-dim:rgba(0,229,255,.08);--red-dim:rgba(255,61,113,.08);
+  --amber-dim:rgba(255,170,0,.08);--green-dim:rgba(57,217,138,.08);
+  --font-mono:'JetBrains Mono',monospace;--font-sans:'DM Sans',sans-serif;
+}
+html{font-size:13px}
+body{
+  background:var(--bg);color:var(--txt);font-family:var(--font-mono);
+  min-height:100vh;overflow-x:hidden;
+  background-image:
+    linear-gradient(rgba(0,229,255,.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,.02) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+/* scrollbar */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg-1)}
+::-webkit-scrollbar-thumb{background:var(--border-h);border-radius:0}
+
+/* ─── HEADER ─── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;height:48px;
+  background:var(--bg-1);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+}
+.header-left{display:flex;align-items:center;gap:10px}
+.chip-icon{
+  width:22px;height:22px;position:relative;
+  border:1.5px solid var(--cyan);border-radius:2px;
+  display:flex;align-items:center;justify-content:center;
+}
+.chip-icon::before{
+  content:'';width:8px;height:8px;background:var(--cyan);
+  box-shadow:0 0 6px var(--cyan);
+}
+.chip-icon::after{
+  content:'';position:absolute;
+  top:-4px;left:50%;transform:translateX(-50%);
+  width:2px;height:4px;background:var(--cyan);
+  box-shadow:
+    6px 0 0 var(--cyan),-6px 0 0 var(--cyan),
+    0 26px 0 var(--cyan),6px 26px 0 var(--cyan),-6px 26px 0 var(--cyan);
+}
+.header-title{
+  font-family:var(--font-sans);font-weight:700;font-size:13px;
+  color:var(--txt-bright);letter-spacing:.5px;text-transform:uppercase;
+}
+.header-center{display:flex;align-items:center;gap:8px}
+.live-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--green);
+  animation:blink 1.5s infinite;box-shadow:0 0 6px var(--green);
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.live-label{font-size:11px;color:var(--green);letter-spacing:1.5px;font-weight:700}
+.header-right{display:flex;align-items:center;gap:14px}
+.clock{font-size:11px;color:var(--txt-dim);letter-spacing:.5px}
+.model-badge{
+  font-size:10px;padding:2px 8px;
+  border:1px solid var(--cyan);color:var(--cyan);
+  letter-spacing:.5px;text-transform:uppercase;
+}
+
+/* ─── STATS ROW ─── */
+.stats-row{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  border-bottom:1px solid var(--border);
+}
+.stat-block{
+  padding:14px 20px;border-right:1px solid var(--border);
+  position:relative;
+}
+.stat-block:last-child{border-right:none}
+.stat-label{
+  font-size:9px;color:var(--txt-dim);letter-spacing:1.5px;
+  text-transform:uppercase;margin-bottom:4px;
+}
+.stat-value{
+  font-size:26px;font-weight:700;color:var(--txt-bright);
+  line-height:1;
+}
+.stat-value.danger{color:var(--red)}
+.stat-value .unit{font-size:13px;color:var(--txt-dim);font-weight:400}
+
+/* ─── MAIN GRID ─── */
+.main{
+  display:grid;grid-template-columns:1fr 1fr;
+  min-height:0;
+}
+@media(min-width:1100px){.main{grid-template-columns:3fr 2fr}}
+.panel{border-right:1px solid var(--border);display:flex;flex-direction:column}
+.panel:last-child{border-right:none}
+.panel-head{
+  padding:10px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg-1);
+}
+.panel-title{
+  font-family:var(--font-sans);font-size:11px;font-weight:700;
+  color:var(--txt-dim);letter-spacing:1.5px;text-transform:uppercase;
+}
+.panel-body{padding:16px 20px;flex:1;overflow-y:auto}
+
+/* ─── FORM ─── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+.field{display:flex;flex-direction:column}
+.field label{
+  font-size:9px;color:var(--txt-dim);letter-spacing:1px;
+  text-transform:uppercase;margin-bottom:3px;
+}
+.field input{
+  background:var(--bg);border:1px solid var(--border);
+  color:var(--txt-bright);padding:7px 10px;font-family:var(--font-mono);
+  font-size:12px;outline:none;transition:border .15s;
+}
+.field input:focus{border-color:var(--cyan);box-shadow:0 0 0 1px rgba(0,229,255,.15)}
+.field input::placeholder{color:var(--txt-dim);opacity:.5}
+.btn-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.btn{
+  font-family:var(--font-mono);font-size:11px;font-weight:700;
+  padding:8px 18px;border:none;cursor:pointer;
+  letter-spacing:.5px;text-transform:uppercase;
+  transition:all .15s;position:relative;
+}
+.btn-primary{background:var(--cyan);color:var(--bg)}
+.btn-primary:hover{box-shadow:0 0 12px rgba(0,229,255,.3)}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--txt)}
+.btn-secondary:hover{border-color:var(--txt-dim);color:var(--txt-bright)}
+.btn-danger{background:transparent;border:1px solid var(--red);color:var(--red)}
+.btn-danger:hover{background:var(--red-dim)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn .spinner{
+  display:none;width:12px;height:12px;
+  border:2px solid transparent;border-top-color:currentColor;
+  border-radius:50%;animation:spin .6s linear infinite;
+  margin-right:6px;vertical-align:middle;
+}
+.btn.loading .spinner{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─── RESULT PANEL ─── */
+.result{
+  margin-top:18px;border:1px solid var(--border);
+  animation:fadeIn .3s ease;display:none;
+}
+.result.visible{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.result-header{
+  padding:10px 14px;display:flex;align-items:center;
+  justify-content:space-between;border-bottom:1px solid var(--border);
+  background:var(--bg-1);
+}
+.result-server{font-size:13px;font-weight:700;color:var(--txt-bright)}
+.risk-badge{
+  font-size:9px;font-weight:700;padding:3px 10px;
+  letter-spacing:1px;text-transform:uppercase;
+}
+.risk-low{background:var(--green-dim);color:var(--green);border:1px solid var(--green)}
+.risk-medium{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber)}
+.risk-high,.risk-critical{background:var(--red-dim);color:var(--red);border:1px solid var(--red)}
+.result-body{padding:14px}
+.score-row{margin-bottom:12px}
+.score-label{font-size:9px;color:var(--txt-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.score-bar-track{
+  height:6px;background:var(--bg);border:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.score-bar-fill{
+  height:100%;transition:width .5s ease,background .3s;
+  position:absolute;left:0;top:0;
+}
+.score-num{font-size:18px;font-weight:700;color:var(--txt-bright);margin-top:4px}
+.details-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.detail-pill{
+  font-size:9px;padding:3px 8px;letter-spacing:.5px;
+  border:1px solid var(--border);color:var(--txt-dim);
+  text-transform:uppercase;
+}
+.detail-pill.status-high,.detail-pill.status-critical{border-color:var(--red);color:var(--red);background:var(--red-dim)}
+.detail-pill.status-warning,.detail-pill.status-elevated{border-color:var(--amber);color:var(--amber);background:var(--amber-dim)}
+.detail-pill.status-normal,.detail-pill.status-low{border-color:var(--border);color:var(--txt-dim)}
+.detail-pill.status-slow{border-color:var(--amber);color:var(--amber);background:var(--amber-dim)}
+.result-ts{font-size:9px;color:var(--txt-dim);margin-top:10px;letter-spacing:.5px}
+
+/* ─── ALERT FEED ─── */
+.alert-feed{max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:0}
+.alert-item{
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  animation:slideIn .25s ease;display:flex;align-items:flex-start;
+  justify-content:space-between;gap:10px;
+}
+@keyframes slideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
+.alert-item:hover{background:var(--bg-2)}
+.alert-left{display:flex;flex-direction:column;gap:2px;min-width:0}
+.alert-server{font-size:12px;font-weight:700;color:var(--txt-bright)}
+.alert-time{font-size:9px;color:var(--txt-dim);letter-spacing:.5px}
+.alert-score{font-size:9px;color:var(--txt-dim)}
+.alert-empty{
+  padding:40px 20px;text-align:center;
+  color:var(--txt-dim);font-size:11px;letter-spacing:.5px;
+}
+.alert-empty::before{
+  content:'—';display:block;font-size:20px;margin-bottom:6px;color:var(--border-h);
+}
+
+/* ─── MODEL ROW ─── */
+.model-row{
+  display:flex;flex-wrap:wrap;
+  border-top:1px solid var(--border);background:var(--bg-1);
+}
+.model-row .panel-head{flex:0 0 100%;border-bottom:1px solid var(--border)}
+.model-kv{
+  padding:12px 20px;border-right:1px solid var(--border);
+  flex:1;min-width:140px;
+}
+.model-kv:last-child{border-right:none}
+.model-kv .stat-label{margin-bottom:2px}
+.model-kv .stat-value{font-size:15px}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:768px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .stat-block:nth-child(2){border-right:none}
+  .main{grid-template-columns:1fr}
+  .panel{border-right:none;border-bottom:1px solid var(--border)}
+  .form-grid{grid-template-columns:1fr}
+  .header-center{display:none}
+  .model-kv{min-width:120px}
+}
+@media(max-width:480px){
+  .stats-row{grid-template-columns:1fr}
+  .stat-block{border-right:none;border-bottom:1px solid var(--border)}
+  .btn-row{flex-direction:column}
+  .btn{width:100%}
+}
+
+/* ─── UTILITY ─── */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.loading-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(10,14,23,.6);z-index:200;
+  display:none;align-items:center;justify-content:center;
+}
+.loading-overlay.visible{display:flex}
+.loading-spinner{
+  width:28px;height:28px;border:2px solid var(--border);
+  border-top-color:var(--cyan);border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+.status-bar{
+  position:fixed;bottom:0;left:0;right:0;height:24px;
+  background:var(--bg-1);border-top:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;
+  font-size:9px;color:var(--txt-dim);letter-spacing:.5px;
+  z-index:100;justify-content:space-between;
+}
+.status-bar .hotkey{color:var(--txt-dim)}
+.status-bar .hotkey kbd{
+  background:var(--bg-2);border:1px solid var(--border);
+  padding:0 4px;font-family:var(--font-mono);font-size:9px;
+  color:var(--txt);
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="chip-icon"></div>
+    <span class="header-title">Network Anomaly Detection</span>
+  </div>
+  <div class="header-center">
+    <div class="live-dot" id="liveDot"></div>
+    <span class="live-label" id="liveLabel">SYSTEM ONLINE</span>
+  </div>
+  <div class="header-right">
+    <span class="clock" id="clock"></span>
+    <span class="model-badge" id="modelBadge">—</span>
+  </div>
+</div>
+
+<!-- STATS ROW -->
+<div class="stats-row">
+  <div class="stat-block">
+    <div class="stat-label">Servers Monitored</div>
+    <div class="stat-value" id="statServers">—</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-label">Total Checks</div>
+    <div class="stat-value" id="statChecks">—</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-label">Anomalies Detected</div>
+    <div class="stat-value" id="statAnomalies">—</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-label">Anomaly Rate</div>
+    <div class="stat-value" id="statRate">—</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- LEFT: ANALYZE -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">&#9654; Analyze Server</span>
+    </div>
+    <div class="panel-body">
+      <div class="form-grid">
+        <div class="field">
+          <label for="f_server_id">Server ID</label>
+          <input id="f_server_id" type="text" placeholder="e.g. srv-web-01">
+        </div>
+        <div class="field">
+          <label for="f_cpu">CPU Usage (%)</label>
+          <input id="f_cpu" type="number" step="0.1" placeholder="0–100">
+        </div>
+        <div class="field">
+          <label for="f_mem">Memory Usage (%)</label>
+          <input id="f_mem" type="number" step="0.1" placeholder="0–100">
+        </div>
+        <div class="field">
+          <label for="f_disk">Disk I/O (MB/s)</label>
+          <input id="f_disk" type="number" step="0.1" placeholder="0–500">
+        </div>
+        <div class="field">
+          <label for="f_net">Network Traffic (Mbps)</label>
+          <input id="f_net" type="number" step="0.1" placeholder="0–1000">
+        </div>
+        <div class="field">
+          <label for="f_err">Error Count</label>
+          <input id="f_err" type="number" placeholder="0–100">
+        </div>
+        <div class="field">
+          <label for="f_resp">Response Time (ms)</label>
+          <input id="f_resp" type="number" step="0.1" placeholder="0–5000">
+        </div>
+        <div class="field">
+          <label for="f_conn">Active Connections</label>
+          <input id="f_conn" type="number" placeholder="0–500">
+        </div>
+        <div class="field">
+          <label for="f_pkt">Packet Loss (%)</label>
+          <input id="f_pkt" type="number" step="0.01" placeholder="0–100">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnAnalyze" onclick="analyze()">
+          <span class="spinner"></span>ANALYZE
+        </button>
+        <button class="btn btn-secondary" onclick="fillRandom()">RANDOM TEST</button>
+        <button class="btn btn-danger" onclick="fillAnomaly()">SIMULATE ANOMALY</button>
+      </div>
+
+      <!-- RESULT -->
+      <div class="result" id="resultPanel">
+        <div class="result-header">
+          <span class="result-server" id="resServer"></span>
+          <span class="risk-badge" id="resBadge"></span>
+        </div>
+        <div class="result-body">
+          <div class="score-row">
+            <div class="score-label">Anomaly Score</div>
+            <div class="score-bar-track">
+              <div class="score-bar-fill" id="resBar"></div>
+            </div>
+            <div class="score-num" id="resScore"></div>
+          </div>
+          <div class="score-label">Status Breakdown</div>
+          <div class="details-grid" id="resDetails"></div>
+          <div class="result-ts" id="resTs"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: ALERTS -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">&#9654; Alert Feed</span>
+      <button class="btn btn-secondary" style="padding:4px 10px;font-size:9px" onclick="clearAlerts()">CLEAR</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="alert-feed" id="alertFeed">
+        <div class="alert-empty">No anomalies detected</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODEL INFO -->
+<div class="model-row">
+  <div class="panel-head" style="border-bottom:1px solid var(--border)">
+    <span class="panel-title">&#9654; Model Info</span>
+  </div>
+  <div class="model-kv">
+    <div class="stat-label">Model Type</div>
+    <div class="stat-value" id="miType">—</div>
+  </div>
+  <div class="model-kv">
+    <div class="stat-label">Precision</div>
+    <div class="stat-value" id="miPrecision">—</div>
+  </div>
+  <div class="model-kv">
+    <div class="stat-label">Recall</div>
+    <div class="stat-value" id="miRecall">—</div>
+  </div>
+  <div class="model-kv">
+    <div class="stat-label">F1 Score</div>
+    <div class="stat-value" id="miF1">—</div>
+  </div>
+  <div class="model-kv">
+    <div class="stat-label">Training Date</div>
+    <div class="stat-value" id="miDate">—</div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span>Auto-refresh: 30s &nbsp;|&nbsp; Last update: <span id="lastUpdate">—</span></span>
+  <span class="hotkey"><kbd>Enter</kbd> Analyze &nbsp; <kbd>R</kbd> Random &nbsp; <kbd>A</kbd> Anomaly</span>
+</div>
+
+<script>
+const API = 'https://network-anomaly-api-894733684211.us-central1.run.app';
+
+// ─── CLOCK ───
+function updateClock() {
+  const now = new Date();
+  const d = now.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'2-digit' });
+  const t = now.toLocaleTimeString('en-US', { hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  document.getElementById('clock').textContent = d + '  ' + t;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── FETCH HELPERS ───
+async function apiFetch(path, opts) {
+  const res = await fetch(API + path, opts);
+  if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+  return res.json();
+}
+
+function stampNow() {
+  document.getElementById('lastUpdate').textContent =
+    new Date().toLocaleTimeString('en-US', { hour12:false });
+}
+
+// ─── LOAD STATS ───
+async function loadStats() {
+  try {
+    const d = await apiFetch('/dashboard/summary');
+    document.getElementById('statServers').textContent = d.servers_monitored ?? '—';
+    document.getElementById('statChecks').textContent = (d.total_checks ?? 0).toLocaleString();
+    const anomVal = d.total_anomalies ?? 0;
+    const el = document.getElementById('statAnomalies');
+    el.textContent = anomVal.toLocaleString();
+    el.className = 'stat-value' + (anomVal > 0 ? ' danger' : '');
+    const rate = d.anomaly_rate ?? 0;
+    document.getElementById('statRate').innerHTML =
+      (typeof rate === 'number' ? rate.toFixed(1) : rate) + '<span class="unit">%</span>';
+    stampNow();
+  } catch(e) { console.error('stats:', e); }
+}
+
+// ─── LOAD HEALTH ───
+async function loadHealth() {
+  try {
+    const h = await apiFetch('/health');
+    document.getElementById('modelBadge').textContent = h.model_type || 'AI';
+    const dot = document.getElementById('liveDot');
+    const lbl = document.getElementById('liveLabel');
+    if (h.status === 'healthy') {
+      dot.style.background = 'var(--green)';
+      dot.style.boxShadow = '0 0 6px var(--green)';
+      lbl.textContent = 'SYSTEM ONLINE';
+      lbl.style.color = 'var(--green)';
+    } else {
+      dot.style.background = 'var(--red)';
+      dot.style.boxShadow = '0 0 6px var(--red)';
+      lbl.textContent = 'SYSTEM OFFLINE';
+      lbl.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    console.error('health:', e);
+    document.getElementById('liveLabel').textContent = 'CONN ERROR';
+    document.getElementById('liveLabel').style.color = 'var(--red)';
+  }
+}
+
+// ─── LOAD MODEL ───
+async function loadModel() {
+  try {
+    const m = await apiFetch('/model/info');
+    document.getElementById('miType').textContent = m.model_type || '—';
+    const metrics = m.metrics || m;
+    document.getElementById('miPrecision').textContent =
+      metrics.precision != null ? Number(metrics.precision).toFixed(4) : '—';
+    document.getElementById('miRecall').textContent =
+      metrics.recall != null ? Number(metrics.recall).toFixed(4) : '—';
+    document.getElementById('miF1').textContent =
+      metrics.f1_score != null ? Number(metrics.f1_score).toFixed(4) : '—';
+    document.getElementById('miDate').textContent = m.training_date || m.last_trained || '—';
+  } catch(e) { console.error('model:', e); }
+}
+
+// ─── LOAD ALERTS ───
+let alertCache = [];
+async function loadAlerts() {
+  try {
+    const d = await apiFetch('/alerts');
+    const alerts = d.alerts || [];
+    if (alerts.length === 0) return;
+    const newAlerts = alerts.filter(a =>
+      !alertCache.some(c => c.timestamp === a.timestamp && c.server_id === a.server_id)
+    );
+    if (newAlerts.length > 0) {
+      alertCache = alerts;
+      renderAlerts();
+    }
+  } catch(e) { console.error('alerts:', e); }
+}
+
+function renderAlerts() {
+  const feed = document.getElementById('alertFeed');
+  if (alertCache.length === 0) {
+    feed.innerHTML = '<div class="alert-empty">No anomalies detected</div>';
+    return;
+  }
+  const sorted = [...alertCache].sort((a, b) =>
+    new Date(b.timestamp) - new Date(a.timestamp)
+  );
+  feed.innerHTML = sorted.map(a => {
+    const risk = (a.risk_level || 'low').toLowerCase();
+    const cls = risk === 'critical' || risk === 'high' ? 'risk-high'
+              : risk === 'medium' ? 'risk-medium' : 'risk-low';
+    const ts = a.timestamp ? new Date(a.timestamp).toLocaleTimeString('en-US', { hour12:false }) : '—';
+    const score = a.anomaly_score != null ? 'Score: ' + Number(a.anomaly_score).toFixed(3) : '';
+    return `<div class="alert-item">
+      <div class="alert-left">
+        <span class="alert-server">${esc(a.server_id || '—')}</span>
+        <span class="alert-time">${ts}</span>
+        <span class="alert-score">${score}</span>
+      </div>
+      <span class="risk-badge ${cls}">${esc((a.risk_level||'low').toUpperCase())}</span>
+    </div>`;
+  }).join('');
+}
+
+function clearAlerts() {
+  alertCache = [];
+  renderAlerts();
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ─── FORM HELPERS ───
+const ids = ['f_server_id','f_cpu','f_mem','f_disk','f_net','f_err','f_resp','f_conn','f_pkt'];
+function val(id) { return document.getElementById(id).value; }
+function setVal(id, v) { document.getElementById(id).value = v; }
+
+function rand(min, max, dec) {
+  const v = Math.random() * (max - min) + min;
+  return dec != null ? Number(v.toFixed(dec)) : Math.round(v);
+}
+
+function fillRandom() {
+  setVal('f_server_id', 'srv-' + ['web','db','cache','api','worker'][rand(0,4)] + '-' + String(rand(1,20)).padStart(2,'0'));
+  setVal('f_cpu', rand(10, 70, 1));
+  setVal('f_mem', rand(20, 65, 1));
+  setVal('f_disk', rand(10, 150, 1));
+  setVal('f_net', rand(50, 400, 1));
+  setVal('f_err', rand(0, 8));
+  setVal('f_resp', rand(50, 300, 1));
+  setVal('f_conn', rand(10, 150));
+  setVal('f_pkt', rand(0, 2, 2));
+}
+
+function fillAnomaly() {
+  setVal('f_server_id', 'srv-' + ['web','db','api'][rand(0,2)] + '-' + String(rand(1,5)).padStart(2,'0'));
+  setVal('f_cpu', rand(88, 99, 1));
+  setVal('f_mem', rand(90, 98, 1));
+  setVal('f_disk', rand(300, 490, 1));
+  setVal('f_net', rand(800, 980, 1));
+  setVal('f_err', rand(40, 95));
+  setVal('f_resp', rand(2000, 4800, 1));
+  setVal('f_conn', rand(350, 490));
+  setVal('f_pkt', rand(10, 45, 2));
+}
+
+// ─── ANALYZE ───
+async function analyze() {
+  const btn = document.getElementById('btnAnalyze');
+  if (btn.disabled) return;
+
+  const body = {
+    server_id: val('f_server_id') || 'srv-unknown',
+    cpu_usage: Number(val('f_cpu')) || 0,
+    memory_usage: Number(val('f_mem')) || 0,
+    disk_io: Number(val('f_disk')) || 0,
+    network_traffic: Number(val('f_net')) || 0,
+    error_count: Number(val('f_err')) || 0,
+    response_time: Number(val('f_resp')) || 0,
+    active_connections: Number(val('f_conn')) || 0,
+    packet_loss: Number(val('f_pkt')) || 0,
+  };
+
+  btn.disabled = true;
+  btn.classList.add('loading');
+
+  try {
+    const r = await apiFetch('/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    showResult(r);
+    // refresh stats & alerts after analysis
+    loadStats();
+    loadAlerts();
+  } catch(e) {
+    alert('Analysis failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  }
+}
+
+function showResult(r) {
+  const panel = document.getElementById('resultPanel');
+  panel.classList.add('visible');
+
+  document.getElementById('resServer').textContent = r.server_id || '—';
+
+  const risk = (r.risk_level || 'low').toLowerCase();
+  const badge = document.getElementById('resBadge');
+  badge.textContent = (r.risk_level || 'LOW').toUpperCase();
+  badge.className = 'risk-badge risk-' + risk;
+
+  const score = r.anomaly_score ?? 0;
+  const pct = Math.min(score * 100, 100);
+  const bar = document.getElementById('resBar');
+  bar.style.width = pct + '%';
+  bar.style.background = score > 0.7 ? 'var(--red)' : score > 0.4 ? 'var(--amber)' : 'var(--green)';
+  document.getElementById('resScore').textContent = Number(score).toFixed(4);
+
+  // details
+  const det = document.getElementById('resDetails');
+  const details = r.details || {};
+  det.innerHTML = Object.entries(details).map(([k, v]) => {
+    const status = (typeof v === 'string' ? v : '').toLowerCase();
+    let cls = 'status-normal';
+    if (status.includes('high') || status.includes('critical') || status.includes('excessive') || status.includes('overloaded') || status.includes('saturated'))
+      cls = 'status-high';
+    else if (status.includes('warning') || status.includes('elevated'))
+      cls = 'status-warning';
+    else if (status.includes('slow'))
+      cls = 'status-slow';
+    const label = k.replace(/_/g, ' ');
+    return `<span class="detail-pill ${cls}">${esc(label)}: ${esc(v)}</span>`;
+  }).join('');
+
+  document.getElementById('resTs').textContent = r.timestamp || '';
+
+  // add to local alert feed if anomaly
+  if (r.is_anomaly) {
+    alertCache.unshift({
+      server_id: r.server_id,
+      risk_level: r.risk_level,
+      anomaly_score: r.anomaly_score,
+      timestamp: r.timestamp,
+    });
+    renderAlerts();
+  }
+}
+
+// ─── KEYBOARD SHORTCUTS ───
+document.addEventListener('keydown', function(e) {
+  // don't fire if focused on an input
+  const tag = e.target.tagName;
+  if (e.key === 'Enter') {
+    analyze();
+    e.preventDefault();
+  }
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if (e.key === 'r' || e.key === 'R') fillRandom();
+  if (e.key === 'a' || e.key === 'A') fillAnomaly();
+});
+
+// ─── INIT ───
+loadHealth();
+loadStats();
+loadModel();
+loadAlerts();
+
+// auto-refresh every 30s
+setInterval(() => {
+  loadStats();
+  loadAlerts();
+  loadHealth();
+}, 30000);
+</script>
+
+</body>
+</html>

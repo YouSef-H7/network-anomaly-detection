@@ -7,6 +7,7 @@
 """
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List
@@ -295,6 +296,13 @@ async def clear_alerts():
     alerts_history.clear()
     monitoring_log.clear()
     return {"message": "All alerts cleared", "status": "ok"}
+
+
+@app.get("/dashboard", response_class=HTMLResponse, tags=["Dashboard"])
+async def dashboard_page():
+    """Serve the monitoring dashboard"""
+    with open("dashboard.html", "r", encoding="utf-8") as f:
+        return f.read()
 
 
 if __name__ == "__main__":
