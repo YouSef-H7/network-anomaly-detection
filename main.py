@@ -6,7 +6,7 @@
 =============================================================================
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -16,6 +16,9 @@ import numpy as np
 import pandas as pd
 import os
 import json
+import sqlite3
+import csv
+import io
 from datetime import datetime
 
 # ============================================================================
@@ -36,6 +39,44 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ============================================================================
+# DATABASE
+# ============================================================================
+DB_PATH = "network_monitoring.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS monitoring_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id TEXT,
+        cpu_usage REAL,
+        memory_usage REAL,
+        disk_io REAL,
+        network_traffic REAL,
+        error_count INTEGER,
+        response_time REAL,
+        active_connections INTEGER,
+        packet_loss REAL,
+        is_anomaly BOOLEAN,
+        anomaly_score REAL,
+        risk_level TEXT,
+        timestamp TEXT
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS alerts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id TEXT,
+        risk_level TEXT,
+        anomaly_score REAL,
+        details TEXT,
+        timestamp TEXT,
+        acknowledged BOOLEAN DEFAULT 0
+    )''')
+    conn.commit()
+    conn.close()
+
+init_db()
 
 # ============================================================================
 # LOAD MODEL
@@ -166,6 +207,7 @@ def analyze_server(metrics: ServerMetrics) -> AnomalyResult:
         details=details
     )
 
+    # Save to in-memory log
     monitoring_log.append({
         "server_id": metrics.server_id,
         "is_anomaly": is_anomaly,
@@ -173,6 +215,19 @@ def analyze_server(metrics: ServerMetrics) -> AnomalyResult:
         "score": normalized_score,
         "timestamp": timestamp
     })
+
+    # Save to SQLite database
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("""INSERT INTO monitoring_logs
+        (server_id, cpu_usage, memory_usage, disk_io, network_traffic,
+         error_count, response_time, active_connections, packet_loss,
+         is_anomaly, anomaly_score, risk_level, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (metrics.server_id, metrics.cpu_usage, metrics.memory_usage,
+         metrics.disk_io, metrics.network_traffic, metrics.error_count,
+         metrics.response_time, metrics.active_connections, metrics.packet_loss,
+         is_anomaly, normalized_score, result.risk_level, timestamp))
 
     if is_anomaly:
         alert = {
@@ -192,6 +247,15 @@ def analyze_server(metrics: ServerMetrics) -> AnomalyResult:
             }
         }
         alerts_history.append(alert)
+
+        c.execute("""INSERT INTO alerts
+            (server_id, risk_level, anomaly_score, details, timestamp)
+            VALUES (?, ?, ?, ?, ?)""",
+            (metrics.server_id, result.risk_level, normalized_score,
+             json.dumps(details), timestamp))
+
+    conn.commit()
+    conn.close()
 
     return result
 
@@ -242,6 +306,48 @@ async def analyze_batch(batch: BatchMetrics):
         anomalies_found=len(anomalies),
         healthy_servers=len(results) - len(anomalies)
     )
+
+@app.post("/analyze/file", tags=["Anomaly Detection"])
+async def analyze_file(file: UploadFile = File(...)):
+    """Upload a CSV file to analyze multiple servers at once."""
+    content = await file.read()
+    decoded = content.decode("utf-8")
+    reader = csv.DictReader(io.StringIO(decoded))
+
+    results = []
+    for row in reader:
+        try:
+            metrics = ServerMetrics(
+                server_id=row["server_id"],
+                cpu_usage=float(row["cpu_usage"]),
+                memory_usage=float(row["memory_usage"]),
+                disk_io=float(row["disk_io"]),
+                network_traffic=float(row["network_traffic"]),
+                error_count=int(float(row["error_count"])),
+                response_time=float(row["response_time"]),
+                active_connections=int(float(row["active_connections"])),
+                packet_loss=float(row["packet_loss"])
+            )
+            result = analyze_server(metrics)
+            results.append({
+                "server_id": result.server_id,
+                "is_anomaly": result.is_anomaly,
+                "anomaly_score": result.anomaly_score,
+                "risk_level": result.risk_level,
+                "timestamp": result.timestamp,
+                "details": result.details
+            })
+        except Exception as e:
+            results.append({"server_id": row.get("server_id", "unknown"), "error": str(e)})
+
+    anomalies = [r for r in results if r.get("is_anomaly", False)]
+    return {
+        "filename": file.filename,
+        "total_servers": len(results),
+        "anomalies_found": len(anomalies),
+        "healthy_servers": len(results) - len(anomalies),
+        "results": results
+    }
 
 @app.get("/alerts", tags=["Alerts"])
 async def get_alerts(limit: int = 50):
@@ -297,6 +403,122 @@ async def clear_alerts():
     monitoring_log.clear()
     return {"message": "All alerts cleared", "status": "ok"}
 
+# ============================================================================
+# DATABASE ENDPOINTS
+# ============================================================================
+
+@app.get("/db/logs", tags=["Database"])
+async def get_db_logs(limit: int = 100):
+    """Returns last N monitoring logs from database"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM monitoring_logs ORDER BY id DESC LIMIT ?", (limit,))
+    rows = [dict(row) for row in c.fetchall()]
+    conn.close()
+    return {"total": len(rows), "logs": rows}
+
+@app.get("/db/alerts", tags=["Database"])
+async def get_db_alerts():
+    """Returns all unacknowledged alerts from database"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM alerts WHERE acknowledged = 0 ORDER BY id DESC")
+    rows = [dict(row) for row in c.fetchall()]
+    conn.close()
+    return {"total": len(rows), "alerts": rows}
+
+@app.get("/db/stats", tags=["Database"])
+async def get_db_stats():
+    """Returns aggregate stats from database"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    c.execute("SELECT COUNT(*) FROM monitoring_logs")
+    total_logs = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM alerts")
+    total_alerts = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(DISTINCT server_id) FROM monitoring_logs")
+    unique_servers = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM monitoring_logs WHERE is_anomaly = 1")
+    total_anomalies = c.fetchone()[0]
+
+    anomaly_rate = round(total_anomalies / total_logs * 100, 2) if total_logs > 0 else 0
+
+    conn.close()
+    return {
+        "total_logs": total_logs,
+        "total_alerts": total_alerts,
+        "unique_servers": unique_servers,
+        "anomaly_rate": anomaly_rate
+    }
+
+@app.post("/db/acknowledge/{alert_id}", tags=["Database"])
+async def acknowledge_alert(alert_id: int):
+    """Marks an alert as acknowledged"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE alerts SET acknowledged = 1 WHERE id = ?", (alert_id,))
+    if c.rowcount == 0:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Alert not found")
+    conn.commit()
+    conn.close()
+    return {"message": f"Alert {alert_id} acknowledged", "status": "ok"}
+
+# ============================================================================
+# REPORT
+# ============================================================================
+
+@app.get("/report/generate", tags=["Reports"])
+async def generate_report():
+    """Generate automated monitoring report"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    c.execute("SELECT COUNT(*) FROM monitoring_logs")
+    total_checks = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM monitoring_logs WHERE is_anomaly = 1")
+    total_anomalies = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(DISTINCT server_id) FROM monitoring_logs")
+    unique_servers = c.fetchone()[0]
+
+    c.execute("""SELECT server_id, COUNT(*) as count FROM monitoring_logs
+                 WHERE is_anomaly = 1 GROUP BY server_id ORDER BY count DESC LIMIT 5""")
+    top_problematic = [{"server_id": row[0], "anomaly_count": row[1]} for row in c.fetchall()]
+
+    c.execute("SELECT risk_level, COUNT(*) FROM alerts GROUP BY risk_level")
+    risk_breakdown = {row[0]: row[1] for row in c.fetchall()}
+
+    c.execute("SELECT COUNT(*) FROM alerts WHERE acknowledged = 0")
+    unacknowledged = c.fetchone()[0]
+
+    conn.close()
+
+    return {
+        "report_title": "Network Monitoring Report",
+        "generated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "summary": {
+            "total_checks": total_checks,
+            "total_anomalies": total_anomalies,
+            "anomaly_rate": round(total_anomalies / total_checks * 100, 2) if total_checks > 0 else 0,
+            "unique_servers": unique_servers,
+            "unacknowledged_alerts": unacknowledged
+        },
+        "top_problematic_servers": top_problematic,
+        "risk_breakdown": risk_breakdown,
+        "model_info": metadata
+    }
+
+# ============================================================================
+# DASHBOARD
+# ============================================================================
 
 @app.get("/dashboard", response_class=HTMLResponse, tags=["Dashboard"])
 async def dashboard_page():

@@ -58,6 +58,12 @@
       z-index: 50;
     }
 
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
     .nav-logo {
       display: flex;
       align-items: center;
@@ -74,6 +80,26 @@
       border-radius: 50%;
       background: var(--blue);
     }
+
+    .nav-links {
+      display: flex;
+      gap: 4px;
+    }
+
+    .nav-link {
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-500);
+      background: none;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .nav-link:hover { color: var(--gray-800); background: var(--gray-100); }
 
     .nav-right {
       display: flex;
@@ -116,6 +142,18 @@
       max-width: 1200px;
       margin: 0 auto;
       padding: 32px 32px 64px;
+    }
+
+    /* -------------------------------------------------------
+       Section title
+    ------------------------------------------------------- */
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
     }
 
     /* -------------------------------------------------------
@@ -162,19 +200,8 @@
     }
 
     /* -------------------------------------------------------
-       Main grid
+       Cards
     ------------------------------------------------------- */
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-
-    @media (min-width: 960px) {
-      .main-grid { grid-template-columns: 65fr 35fr; }
-    }
-
     .card {
       background: #fff;
       border: 1px solid var(--gray-200);
@@ -198,6 +225,100 @@
     }
 
     .card-body { padding: 24px; }
+
+    /* -------------------------------------------------------
+       Batch upload
+    ------------------------------------------------------- */
+    .batch-section { margin-bottom: 32px; }
+
+    .drop-zone {
+      border: 2px dashed var(--gray-300);
+      border-radius: var(--radius);
+      padding: 32px;
+      text-align: center;
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: var(--blue);
+      background: var(--blue-light);
+    }
+
+    .drop-zone p {
+      font-size: 14px;
+      color: var(--gray-500);
+      margin-bottom: 4px;
+    }
+
+    .drop-zone .drop-hint {
+      font-size: 12px;
+      color: var(--gray-400);
+    }
+
+    .drop-zone input { display: none; }
+
+    .batch-results {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .batch-results.visible { display: block; animation: fadeUp 0.25s ease; }
+
+    .batch-summary {
+      font-size: 13px;
+      color: var(--gray-600);
+      margin-bottom: 12px;
+      padding: 12px 16px;
+      background: var(--gray-50);
+      border-radius: var(--radius);
+    }
+
+    .batch-summary strong { color: var(--gray-900); }
+
+    .batch-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .batch-table th {
+      text-align: left;
+      padding: 8px 12px;
+      font-weight: 500;
+      color: var(--gray-500);
+      border-bottom: 1px solid var(--gray-200);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .batch-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--gray-100);
+      color: var(--gray-700);
+    }
+
+    .batch-table tr:last-child td { border-bottom: none; }
+
+    .batch-table .healthy { color: var(--green); font-weight: 500; }
+    .batch-table .anomaly { color: var(--red); font-weight: 500; }
+
+    /* -------------------------------------------------------
+       Main grid
+    ------------------------------------------------------- */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    @media (min-width: 960px) {
+      .main-grid { grid-template-columns: 65fr 35fr; }
+    }
 
     /* -------------------------------------------------------
        Form
@@ -305,7 +426,6 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Text-style button for "Clear" */
     .btn-text-only {
       background: none;
       border: none;
@@ -421,11 +541,7 @@
 
     .details-list li:last-child { border-bottom: none; }
 
-    .detail-key {
-      color: var(--gray-600);
-      text-transform: capitalize;
-    }
-
+    .detail-key { color: var(--gray-600); text-transform: capitalize; }
     .detail-val { font-weight: 500; }
     .detail-val.normal { color: var(--green); }
     .detail-val.warning { color: var(--amber); }
@@ -456,7 +572,6 @@
     }
 
     .alert-item:last-child { border-bottom: none; }
-
     .alert-left { display: flex; flex-direction: column; gap: 2px; }
 
     .alert-name {
@@ -491,6 +606,146 @@
     }
 
     /* -------------------------------------------------------
+       Database section
+    ------------------------------------------------------- */
+    .db-section { margin-bottom: 32px; }
+
+    .db-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .db-stat-row {
+      display: flex;
+      gap: 24px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--gray-100);
+      font-size: 13px;
+    }
+
+    .db-stat-row:last-child { border-bottom: none; }
+
+    .db-stat-label { color: var(--gray-500); min-width: 140px; }
+    .db-stat-val { color: var(--gray-900); font-weight: 500; }
+
+    .db-log-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--gray-100);
+      font-size: 13px;
+    }
+
+    .db-log-item:last-child { border-bottom: none; }
+
+    .db-log-left { display: flex; flex-direction: column; gap: 1px; }
+    .db-log-server { font-weight: 500; color: var(--gray-900); }
+    .db-log-time { font-size: 11px; color: var(--gray-400); }
+
+    /* -------------------------------------------------------
+       Modal
+    ------------------------------------------------------- */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.visible {
+      display: flex;
+      animation: fadeIn 0.15s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: 8px;
+      width: 560px;
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 64px);
+      overflow-y: auto;
+      animation: modalIn 0.2s ease;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.97) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: var(--gray-400);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: var(--radius);
+      font-family: inherit;
+      line-height: 1;
+    }
+
+    .modal-close:hover { color: var(--gray-700); background: var(--gray-100); }
+
+    .modal-body { padding: 24px; }
+
+    .report-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      font-size: 14px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .report-row:last-child { border-bottom: none; }
+    .report-key { color: var(--gray-500); }
+    .report-val { font-weight: 600; color: var(--gray-900); }
+
+    .report-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 20px 0 8px;
+    }
+
+    .report-section-title:first-child { margin-top: 0; }
+
+    .report-server-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+      color: var(--gray-700);
+    }
+
+    .report-server-count { font-weight: 600; color: var(--red); }
+
+    /* -------------------------------------------------------
        Model footer
     ------------------------------------------------------- */
     .model-footer {
@@ -505,19 +760,18 @@
     }
 
     .model-footer span { white-space: nowrap; }
-
-    .sep {
-      color: var(--gray-300);
-    }
+    .sep { color: var(--gray-300); }
 
     /* -------------------------------------------------------
        Responsive
     ------------------------------------------------------- */
     @media (max-width: 768px) {
       .nav { padding: 0 16px; }
+      .nav-links { display: none; }
       .container { padding: 16px 16px 48px; }
       .stats { grid-template-columns: repeat(2, 1fr); gap: 12px; }
       .main-grid { grid-template-columns: 1fr; }
+      .db-grid { grid-template-columns: 1fr; }
       .form-row { grid-template-columns: 1fr; }
       .btn-group { flex-wrap: wrap; }
       .stat-card span { font-size: 26px; }
@@ -536,9 +790,14 @@
        Navigation
   ====================================================== -->
   <nav class="nav">
-    <div class="nav-logo">
-      <div class="nav-dot"></div>
-      NetGuard
+    <div class="nav-left">
+      <div class="nav-logo">
+        <div class="nav-dot"></div>
+        NetGuard
+      </div>
+      <div class="nav-links">
+        <button class="nav-link" id="btnReport">Reports</button>
+      </div>
     </div>
     <div class="nav-right">
       <div class="status-badge" id="statusBadge">
@@ -574,6 +833,40 @@
     </div>
 
     <!-- ===================================================
+         Batch Analysis
+    ==================================================== -->
+    <div class="batch-section">
+      <h3 class="section-title">Batch Analysis</h3>
+      <div class="card">
+        <div class="card-body" style="padding: 0;">
+          <div class="drop-zone" id="dropZone">
+            <p>Drop a CSV file here or click to upload</p>
+            <span class="drop-hint">Columns: server_id, cpu_usage, memory_usage, disk_io, network_traffic, error_count, response_time, active_connections, packet_loss</span>
+            <input type="file" id="fileInput" accept=".csv">
+          </div>
+          <div class="batch-results" id="batchResults">
+            <div style="padding: 16px 24px;">
+              <div class="batch-summary" id="batchSummary"></div>
+              <div style="overflow-x: auto;">
+                <table class="batch-table">
+                  <thead>
+                    <tr>
+                      <th>Server</th>
+                      <th>Status</th>
+                      <th>Score</th>
+                      <th>Risk</th>
+                    </tr>
+                  </thead>
+                  <tbody id="batchBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================
          Main grid
     ==================================================== -->
     <div class="main-grid">
@@ -584,16 +877,12 @@
           <h2 class="card-title">Server Analysis</h2>
         </div>
         <div class="card-body">
-
-          <!-- Server ID — full width -->
           <div class="form-full">
             <div class="form-group">
               <label for="f_id">Server ID</label>
               <input id="f_id" type="text" placeholder="srv-web-01">
             </div>
           </div>
-
-          <!-- Metric fields — two columns -->
           <div class="form-row">
             <div class="form-group">
               <label for="f_cpu">CPU Usage (%)</label>
@@ -628,8 +917,6 @@
               <input id="f_pkt" type="number" step="0.01" placeholder="0 – 100">
             </div>
           </div>
-
-          <!-- Actions -->
           <div class="btn-group">
             <button class="btn btn-blue" id="btnAnalyze">
               <span class="btn-spinner"></span>
@@ -638,8 +925,6 @@
             <button class="btn btn-outline" id="btnRandom">Random Values</button>
             <button class="btn btn-outline-red" id="btnAnomaly">Test Anomaly</button>
           </div>
-
-          <!-- Result -->
           <div class="result-card" id="resultCard">
             <div class="result-top">
               <span class="result-server" id="resServer"></span>
@@ -659,7 +944,6 @@
               <div class="result-ts" id="resTs"></div>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -673,7 +957,31 @@
           <div class="alert-empty">No alerts yet</div>
         </div>
       </div>
+    </div>
 
+    <!-- ===================================================
+         Database
+    ==================================================== -->
+    <div class="db-section">
+      <h3 class="section-title">Database</h3>
+      <div class="db-grid">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Recent Logs</h2>
+          </div>
+          <div class="card-body" id="dbLogs">
+            <div class="alert-empty">No logs yet</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Database Stats</h2>
+          </div>
+          <div class="card-body" id="dbStats">
+            <div class="alert-empty">Loading...</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ===================================================
@@ -689,6 +997,21 @@
       <span id="mfF1">F1: —</span>
     </div>
 
+  </div>
+
+  <!-- =====================================================
+       Report Modal
+  ====================================================== -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Monitoring Report</h2>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-body" id="reportBody">
+        <p style="color: var(--gray-400); text-align: center;">Loading report...</p>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -719,13 +1042,10 @@
       return res.json();
     }
 
-    /**
-     * Turns an ISO/date string into a relative label like "2 min ago".
-     */
     function timeAgo(dateStr) {
       var diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-      if (diff < 5)   return 'just now';
-      if (diff < 60)  return Math.floor(diff) + 's ago';
+      if (diff < 5)    return 'just now';
+      if (diff < 60)   return Math.floor(diff) + 's ago';
       if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
       if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
       return Math.floor(diff / 86400) + 'd ago';
@@ -746,7 +1066,7 @@
     setInterval(tickClock, 1000);
 
     /* =======================================================
-       Health check — sets the status badge
+       Health
     ======================================================= */
     async function loadHealth() {
       try {
@@ -763,7 +1083,7 @@
     }
 
     /* =======================================================
-       Dashboard summary — fills stat cards
+       Stats
     ======================================================= */
     async function loadStats() {
       try {
@@ -783,7 +1103,7 @@
     }
 
     /* =======================================================
-       Model info — fills footer
+       Model
     ======================================================= */
     async function loadModel() {
       try {
@@ -841,7 +1161,7 @@
     });
 
     /* =======================================================
-       Form: fill helpers
+       Form helpers
     ======================================================= */
     function fillRandom() {
       var types = ['web', 'db', 'cache', 'api', 'worker'];
@@ -903,6 +1223,7 @@
         showResult(r);
         loadStats();
         loadAlerts();
+        loadDbData();
       } catch (e) {
         alert('Analysis failed — check the console.');
         console.error(e);
@@ -919,24 +1240,16 @@
     ======================================================= */
     function showResult(r) {
       var card = $('resultCard');
-
-      // Server name
       $('resServer').textContent = r.server_id || '—';
 
-      // Badge
       var risk = (r.risk_level || 'low').toLowerCase();
       var badge = $('resBadge');
       badge.textContent = r.risk_level || 'HEALTHY';
 
-      if (risk === 'critical' || risk === 'high') {
-        badge.className = 'badge badge-red';
-      } else if (risk === 'medium') {
-        badge.className = 'badge badge-amber';
-      } else {
-        badge.className = 'badge badge-green';
-      }
+      if (risk === 'critical' || risk === 'high') badge.className = 'badge badge-red';
+      else if (risk === 'medium') badge.className = 'badge badge-amber';
+      else badge.className = 'badge badge-green';
 
-      // Score bar
       var score = r.anomaly_score ?? 0;
       var pct = Math.min(score * 100, 100);
       $('resScore').textContent = score.toFixed(4);
@@ -947,7 +1260,6 @@
       else if (score > 0.4) bar.style.background = 'var(--amber)';
       else bar.style.background = 'var(--green)';
 
-      // Details list
       var details = r.details || {};
       var html = '';
       Object.keys(details).forEach(function(key) {
@@ -965,17 +1277,12 @@
                 '<span class="detail-val ' + cls + '">' + esc(val) + '</span></li>';
       });
       $('resDetails').innerHTML = html;
-
-      // Timestamp
       $('resTs').textContent = r.timestamp || '';
 
-      // Show card
       card.classList.remove('visible');
-      // Force reflow so the animation replays
       void card.offsetWidth;
       card.classList.add('visible');
 
-      // Push to local alerts if anomaly
       if (r.is_anomaly) {
         alerts.unshift({
           server_id: r.server_id,
@@ -988,12 +1295,189 @@
     }
 
     /* =======================================================
-       Keyboard shortcut: Enter to analyze
+       Batch file upload
+    ======================================================= */
+    var dropZone = $('dropZone');
+    var fileInput = $('fileInput');
+
+    dropZone.addEventListener('click', function() { fileInput.click(); });
+
+    dropZone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', function() {
+      dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length > 0) uploadFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', function() {
+      if (fileInput.files.length > 0) uploadFile(fileInput.files[0]);
+    });
+
+    async function uploadFile(file) {
+      var formData = new FormData();
+      formData.append('file', file);
+
+      dropZone.querySelector('p').textContent = 'Uploading...';
+
+      try {
+        var res = await fetch(API + '/analyze/file', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error(res.status);
+        var data = await res.json();
+        showBatchResults(data);
+        loadStats();
+        loadAlerts();
+        loadDbData();
+      } catch (e) {
+        alert('Upload failed — ' + e.message);
+        console.error(e);
+      } finally {
+        dropZone.querySelector('p').textContent = 'Drop a CSV file here or click to upload';
+        fileInput.value = '';
+      }
+    }
+
+    function showBatchResults(data) {
+      $('batchSummary').innerHTML =
+        '<strong>' + data.total_servers + '</strong> servers analyzed — ' +
+        '<strong style="color:var(--green)">' + data.healthy_servers + '</strong> healthy, ' +
+        '<strong style="color:var(--red)">' + data.anomalies_found + '</strong> anomalies';
+
+      var rows = (data.results || []).map(function(r) {
+        if (r.error) {
+          return '<tr><td>' + esc(r.server_id) + '</td><td style="color:var(--amber)">Error</td><td>—</td><td>—</td></tr>';
+        }
+        var cls = r.is_anomaly ? 'anomaly' : 'healthy';
+        var label = r.is_anomaly ? 'Anomaly' : 'Healthy';
+        return '<tr>' +
+          '<td>' + esc(r.server_id) + '</td>' +
+          '<td class="' + cls + '">' + label + '</td>' +
+          '<td>' + (r.anomaly_score != null ? r.anomaly_score.toFixed(4) : '—') + '</td>' +
+          '<td>' + esc(r.risk_level || '—') + '</td>' +
+        '</tr>';
+      }).join('');
+
+      $('batchBody').innerHTML = rows;
+      $('batchResults').classList.add('visible');
+    }
+
+    /* =======================================================
+       Report modal
+    ======================================================= */
+    $('btnReport').addEventListener('click', openReport);
+    $('modalClose').addEventListener('click', function() {
+      $('reportModal').classList.remove('visible');
+    });
+    $('reportModal').addEventListener('click', function(e) {
+      if (e.target === $('reportModal')) $('reportModal').classList.remove('visible');
+    });
+
+    async function openReport() {
+      $('reportModal').classList.add('visible');
+      $('reportBody').innerHTML = '<p style="color: var(--gray-400); text-align: center;">Loading report...</p>';
+
+      try {
+        var r = await api('/report/generate');
+        var s = r.summary || {};
+        var html = '';
+
+        html += '<div class="report-section-title">Summary</div>';
+        html += '<div class="report-row"><span class="report-key">Total checks</span><span class="report-val">' + (s.total_checks || 0) + '</span></div>';
+        html += '<div class="report-row"><span class="report-key">Total anomalies</span><span class="report-val">' + (s.total_anomalies || 0) + '</span></div>';
+        html += '<div class="report-row"><span class="report-key">Anomaly rate</span><span class="report-val">' + (s.anomaly_rate || 0) + '%</span></div>';
+        html += '<div class="report-row"><span class="report-key">Unique servers</span><span class="report-val">' + (s.unique_servers || 0) + '</span></div>';
+        html += '<div class="report-row"><span class="report-key">Unacknowledged alerts</span><span class="report-val">' + (s.unacknowledged_alerts || 0) + '</span></div>';
+
+        if (r.top_problematic_servers && r.top_problematic_servers.length > 0) {
+          html += '<div class="report-section-title">Top Problematic Servers</div>';
+          r.top_problematic_servers.forEach(function(srv) {
+            html += '<div class="report-server-item">' +
+              '<span>' + esc(srv.server_id) + '</span>' +
+              '<span class="report-server-count">' + srv.anomaly_count + ' anomalies</span>' +
+            '</div>';
+          });
+        }
+
+        if (r.risk_breakdown && Object.keys(r.risk_breakdown).length > 0) {
+          html += '<div class="report-section-title">Risk Breakdown</div>';
+          Object.keys(r.risk_breakdown).forEach(function(k) {
+            html += '<div class="report-row"><span class="report-key">' + esc(k) + '</span><span class="report-val">' + r.risk_breakdown[k] + '</span></div>';
+          });
+        }
+
+        html += '<div class="report-section-title">Generated</div>';
+        html += '<div class="report-row"><span class="report-key">Timestamp</span><span class="report-val">' + esc(r.generated_at || '—') + '</span></div>';
+
+        $('reportBody').innerHTML = html;
+      } catch (e) {
+        $('reportBody').innerHTML = '<p style="color: var(--red); text-align: center;">Failed to load report.</p>';
+        console.error(e);
+      }
+    }
+
+    /* =======================================================
+       Database section
+    ======================================================= */
+    async function loadDbData() {
+      // Load recent logs
+      try {
+        var d = await api('/db/logs?limit=10');
+        var logs = d.logs || [];
+        if (logs.length === 0) {
+          $('dbLogs').innerHTML = '<div class="alert-empty">No logs yet</div>';
+        } else {
+          $('dbLogs').innerHTML = logs.map(function(l) {
+            var dotClass = l.is_anomaly ? 'critical' : 'healthy';
+            return '<div class="db-log-item">' +
+              '<div class="db-log-left">' +
+                '<span class="db-log-server">' + esc(l.server_id) + '</span>' +
+                '<span class="db-log-time">' + esc(l.timestamp) + '</span>' +
+              '</div>' +
+              '<div class="alert-dot ' + dotClass + '"></div>' +
+            '</div>';
+          }).join('');
+        }
+      } catch (e) {
+        $('dbLogs').innerHTML = '<div class="alert-empty">Could not load logs</div>';
+      }
+
+      // Load stats
+      try {
+        var s = await api('/db/stats');
+        var ua = 0;
+        try {
+          var alertData = await api('/db/alerts');
+          ua = alertData.total || 0;
+        } catch (e) { /* silent */ }
+
+        $('dbStats').innerHTML =
+          '<div class="db-stat-row"><span class="db-stat-label">Total logs</span><span class="db-stat-val">' + (s.total_logs || 0) + '</span></div>' +
+          '<div class="db-stat-row"><span class="db-stat-label">Total alerts</span><span class="db-stat-val">' + (s.total_alerts || 0) + '</span></div>' +
+          '<div class="db-stat-row"><span class="db-stat-label">Unique servers</span><span class="db-stat-val">' + (s.unique_servers || 0) + '</span></div>' +
+          '<div class="db-stat-row"><span class="db-stat-label">Anomaly rate</span><span class="db-stat-val">' + (s.anomaly_rate || 0) + '%</span></div>' +
+          '<div class="db-stat-row"><span class="db-stat-label">Unacknowledged</span><span class="db-stat-val" style="color:' + (ua > 0 ? 'var(--red)' : 'var(--gray-900)') + '">' + ua + '</span></div>';
+      } catch (e) {
+        $('dbStats').innerHTML = '<div class="alert-empty">Could not load stats</div>';
+      }
+    }
+
+    /* =======================================================
+       Keyboard shortcut
     ======================================================= */
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
         analyze();
+      }
+      if (e.key === 'Escape') {
+        $('reportModal').classList.remove('visible');
       }
     });
 
@@ -1004,11 +1488,13 @@
     loadStats();
     loadModel();
     loadAlerts();
+    loadDbData();
 
     setInterval(function() {
       loadHealth();
       loadStats();
       loadAlerts();
+      loadDbData();
     }, 30000);
   </script>
 

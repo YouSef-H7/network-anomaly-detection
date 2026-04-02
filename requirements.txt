@@ -5,5 +5,4 @@ joblib
 numpy
 pandas
 pydantic
-sqlalchemy
-psycopg2-binary
+python-multipart
